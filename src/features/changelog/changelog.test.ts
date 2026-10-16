@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   type ChangelogEntry,
   LAST_SEEN_STORAGE_KEY,
+  PREVIEW_STORAGE_KEY,
   compareVersions,
   decideOnLaunch,
   getEntriesBetween,
@@ -141,6 +142,29 @@ describe("changelogStore", () => {
 
     state.close();
     expect(localStorage.getItem(LAST_SEEN_STORAGE_KEY)).toBe("0.1.36");
+  });
+});
+
+describe("changelog preview flag", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useChangelogStore.getState().reset();
+  });
+
+  it("shows the latest entry once without changing the last seen version", () => {
+    localStorage.setItem(LAST_SEEN_STORAGE_KEY, "0.1.35");
+    localStorage.setItem(PREVIEW_STORAGE_KEY, "1");
+    useChangelogStore.getState().checkOnLaunch("0.1.35", SAMPLE);
+
+    const state = useChangelogStore.getState();
+    expect(state.isOpen).toBe(true);
+    expect(state.mode).toBe("update");
+    expect(state.version).toBe("0.2.0");
+    expect(state.entries.map((e) => e.version)).toEqual(["0.2.0"]);
+    expect(localStorage.getItem(PREVIEW_STORAGE_KEY)).toBeNull();
+
+    state.close();
+    expect(localStorage.getItem(LAST_SEEN_STORAGE_KEY)).toBe("0.1.35");
   });
 });
 
