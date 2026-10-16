@@ -24,6 +24,10 @@ export interface CachedAudioRecord {
   byteSize: number;
   savedAt: number;
   lastPlayedAt?: number;
+  // accounts that downloaded or played this file on this machine. the cache itself is
+  // shared, but the offline "downloaded music" list only shows a user their own tracks.
+  // records cached before this field existed have no owner and are never listed.
+  ownerIds?: string[];
 }
 
 export interface CachedLyricsRecord {
@@ -271,9 +275,16 @@ class LinerDb {
     return this.memAudio.get(trackId) || null;
   }
 
-  async putAudio(trackId: string, blob: Blob, mimeType: string, lastPlayedAt?: number): Promise<void> {
-    const existing = this.memAudio.get(trackId);
+  async putAudio(
+    trackId: string,
+    blob: Blob,
+    mimeType: string,
+    lastPlayedAt?: number,
+    ownerId?: string | null,
+  ): Promise<void> {
+    const existing = this.memAudio.get(trackId) ?? (await this.getAudio(trackId));
     const now = Date.now();
+    const ownerIds = mergeOwner(existing?.ownerIds, ownerId);
     const record: CachedAudioRecord = {
       trackId,
       blob,
@@ -281,6 +292,7 @@ class LinerDb {
       byteSize: blob.size,
       savedAt: existing?.savedAt ?? now,
       lastPlayedAt: lastPlayedAt ?? now,
+      ...(ownerIds ? { ownerIds } : {}),
     };
     this.memAudio.set(trackId, record);
 
@@ -289,6 +301,26 @@ class LinerDb {
         const req = store.put(record);
         req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
+      });
+    });
+  }
+
+  // a cached file played by another account on this machine becomes theirs too
+  async addAudioOwner(trackId: string, ownerId: string | null | undefined): Promise<void> {
+    if (!ownerId) return;
+    const record = await this.getAudio(trackId);
+    if (!record || record.ownerIds?.includes(ownerId)) return;
+    const updated: CachedAudioRecord = {
+      ...record,
+      ownerIds: mergeOwner(record.ownerIds, ownerId),
+    };
+    this.memAudio.set(trackId, updated);
+
+    await this.runTransaction("audio", "readwrite", (store) => {
+      return new Promise<void>((resolve) => {
+        const req = store.put(updated);
+        req.onsuccess = () => resolve();
+        req.onerror = () => resolve();
       });
     });
   }
@@ -392,48 +424,39 @@ class LinerDb {
     return total;
   }
 
-  // tracks that have both metadata and a cached audio file, most recently played first.
-  // walks keys and the lastPlayedAt index only, so no audio blob is read.
-  async getDownloadedTracks(): Promise<CachedTrackRecord[]> {
-    const order = await this.runTransaction("audio", "readonly", (store) => {
-      return new Promise<string[]>((resolve) => {
-        const ids: string[] = [];
-        const seen = new Set<string>();
-        const keysReq = store.getAllKeys();
-        keysReq.onerror = () => resolve(ids);
-        keysReq.onsuccess = () => {
-          const allIds = (keysReq.result as IDBValidKey[]).map(String);
-          if (!store.indexNames.contains("lastPlayedAt")) {
-            resolve(allIds);
-            return;
-          }
-          const cursorReq = store.index("lastPlayedAt").openKeyCursor(null, "prev");
-          cursorReq.onerror = () => resolve(allIds);
-          cursorReq.onsuccess = () => {
-            const cursor = cursorReq.result;
-            if (cursor) {
-              const id = String(cursor.primaryKey);
-              if (!seen.has(id)) {
-                seen.add(id);
-                ids.push(id);
-              }
-              cursor.continue();
-            } else {
-              for (const id of allIds) {
-                if (!seen.has(id)) ids.push(id);
-              }
-              resolve(ids);
+  // tracks of one account that have both metadata and a cached audio file,
+  // most recently played first. reads the audio records but never their blobs.
+  async getDownloadedTracks(ownerId: string | null | undefined): Promise<CachedTrackRecord[]> {
+    if (!ownerId) return [];
+
+    const owned = await this.runTransaction("audio", "readonly", (store) => {
+      return new Promise<{ trackId: string; at: number }[]>((resolve) => {
+        const items: { trackId: string; at: number }[] = [];
+        const req = store.openCursor();
+        req.onsuccess = () => {
+          const cursor = req.result;
+          if (cursor) {
+            const val = cursor.value as CachedAudioRecord;
+            if (val?.ownerIds?.includes(ownerId)) {
+              items.push({ trackId: val.trackId, at: val.lastPlayedAt ?? val.savedAt ?? 0 });
             }
-          };
+            cursor.continue();
+          } else {
+            resolve(items);
+          }
         };
+        req.onerror = () => resolve(items);
       });
     });
 
-    const ids =
-      order ??
+    const ids = (
+      owned ??
       Array.from(this.memAudio.values())
-        .sort((a, b) => (b.lastPlayedAt ?? b.savedAt) - (a.lastPlayedAt ?? a.savedAt))
-        .map((r) => r.trackId);
+        .filter((r) => r.ownerIds?.includes(ownerId))
+        .map((r) => ({ trackId: r.trackId, at: r.lastPlayedAt ?? r.savedAt ?? 0 }))
+    )
+      .sort((a, b) => b.at - a.at)
+      .map((item) => item.trackId);
 
     if (ids.length === 0) return [];
 
@@ -712,6 +735,12 @@ class LinerDb {
     await this.clearStore("lyrics");
     await this.clearStore("artists");
   }
+}
+
+function mergeOwner(ownerIds: string[] | undefined, ownerId: string | null | undefined): string[] | undefined {
+  if (!ownerId) return ownerIds;
+  if (ownerIds?.includes(ownerId)) return ownerIds;
+  return [...(ownerIds ?? []), ownerId];
 }
 
 export const linerDb = new LinerDb();
