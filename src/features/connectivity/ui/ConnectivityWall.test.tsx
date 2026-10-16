@@ -11,7 +11,7 @@ import {
   useConnectivityStore,
 } from "../store/connectivityStore";
 import { loadDownloadedTracks } from "@/features/library/hooks/useDownloadedTracks";
-import { getAuthSession } from "@/shared/api/auth-session";
+import { getAuthUserId } from "@/shared/api/auth-session";
 
 (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -26,7 +26,7 @@ vi.mock("@/features/library/hooks/useDownloadedTracks", () => ({
 }));
 
 vi.mock("@/shared/api/auth-session", () => ({
-  getAuthSession: vi.fn(),
+  getAuthUserId: vi.fn(),
 }));
 
 const sampleTrack = (id: string) => ({
@@ -88,7 +88,7 @@ describe("ConnectivityWall downloaded music", () => {
     useConnectivityStore.getState().reset();
     useConnectivityStore.setState({ restoredAt: undefined });
     currentPath = "";
-    vi.mocked(getAuthSession).mockReturnValue({ accessToken: "t" } as never);
+    vi.mocked(getAuthUserId).mockReturnValue("user-a");
     vi.mocked(loadDownloadedTracks).mockResolvedValue([sampleTrack("a"), sampleTrack("b")]);
   });
 
@@ -160,6 +160,8 @@ describe("ConnectivityWall downloaded music", () => {
   it("recognises the offline routes", () => {
     expect(isOfflineRoute("/library/playlist", "?id=downloads")).toBe(true);
     expect(isOfflineRoute("/player", "")).toBe(true);
+    expect(isOfflineRoute("/library", "")).toBe(true);
+    expect(isOfflineRoute("/library/playlist", "?id=pl_123")).toBe(false);
     expect(isOfflineRoute("/library/playlist", "?id=likes")).toBe(false);
     expect(isOfflineRoute("/", "")).toBe(false);
   });
@@ -175,7 +177,7 @@ describe("ConnectivityWall downloaded music", () => {
   });
 
   it("hides the option for a signed-out user", async () => {
-    vi.mocked(getAuthSession).mockReturnValue(null);
+    vi.mocked(getAuthUserId).mockReturnValue(null);
     mounted = await renderWall();
     tripWall();
     await act(async () => {});

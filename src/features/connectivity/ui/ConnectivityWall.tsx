@@ -9,7 +9,7 @@ import type { DiagCheck } from "../lib/diagnostics";
 import { DIAG_ENDPOINTS } from "../lib/diagnostics";
 import { buildOfflineDump, copyDump, downloadDump } from "../lib/dump";
 import { isServerOutage } from "../lib/failureKind";
-import { getAuthSession } from "@/shared/api/auth-session";
+import { getAuthUserId } from "@/shared/api/auth-session";
 import {
   DOWNLOADS_PLAYLIST_ID,
   loadDownloadedTracks,
@@ -17,8 +17,10 @@ import {
 
 const SUPPORT_MAIL = "dev@tryliner.fun";
 
+// pages that work from the local cache: the downloads playlist, the player, and the
+// library that links to the downloads (it shows its own error line for the rest)
 export function isOfflineRoute(pathname: string, search: string): boolean {
-  if (pathname === "/player") return true;
+  if (pathname === "/player" || pathname === "/library") return true;
   return (
     pathname === "/library/playlist" &&
     new URLSearchParams(search).get("id") === DOWNLOADS_PLAYLIST_ID
@@ -65,7 +67,7 @@ export default function ConnectivityWall() {
 
   const location = useLocation();
 
-  // offline mode only covers the downloads page and the player: anywhere else the
+  // offline mode only covers the offline routes: anywhere else the
   // user needs the server, so the wall comes back on the next failures.
   // runs on navigation only, entering offline mode happens together with a navigation.
   useEffect(() => {
@@ -111,7 +113,7 @@ export default function ConnectivityWall() {
     return check.host ? `${base} · ${check.host}` : base;
   };
 
-  const canOpenDownloads = downloadedCount > 0 && getAuthSession() !== null;
+  const canOpenDownloads = downloadedCount > 0 && getAuthUserId() !== null;
 
   const handleOpenDownloads = () => {
     navigate(`/library/playlist?id=${DOWNLOADS_PLAYLIST_ID}`);
