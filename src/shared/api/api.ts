@@ -598,6 +598,7 @@ import type {
   ApiUserPlaylistItem,
   PlaybackSessionResponse as PlaybackSession,
   LyricsStreamEvent,
+  LyricsReportRequest,
   ImportJob,
   ImportReview,
   ImportReviewDecision,
@@ -951,6 +952,20 @@ export const api = {
           ...(transport ? { transport } : {}),
           ...(preferredCodec ? { preferredCodec } : {}),
         }),
+      },
+    );
+  },
+
+  // the backend has no such route yet; see src/features/lyrics/report/lyricsReportTransport.ts
+  submitLyricsReport(
+    trackId: string,
+    report: LyricsReportRequest,
+  ): Promise<{ id?: string }> {
+    return request<{ id?: string }>(
+      `/v1/tracks/${encodeURIComponent(trackId)}/lyrics/reports`,
+      {
+        method: "POST",
+        body: JSON.stringify(report),
       },
     );
   },
