@@ -75,3 +75,35 @@ export type LyricsStreamEvent =
       };
       status?: 'not_found';
     };
+
+// body of POST /v1/tracks/{id}/lyrics/reports, proposed for the backend
+export interface LyricsReportRequest {
+  reportId: string;
+  kind: 'wrong_words' | 'out_of_sync';
+  createdAt: string;
+  positionMs: number;
+  offsetMs: number;
+  note?: string;
+  line: {
+    index: number;
+    text: string;
+    startMs: number | null;
+    endMs: number | null;
+    picked: 'clicked' | 'active';
+  } | null;
+  context: {
+    before: string[];
+    after: string[];
+  };
+  lyrics: {
+    provider: string | null;
+    format: string | null;
+    syncLevel: string | null;
+    contentHash: string | null;
+    lineCount: number;
+  };
+  client: {
+    appVersion: string;
+    locale: string;
+  };
+}

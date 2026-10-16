@@ -899,5 +899,32 @@
     "downloaded_desc": "Restart Liner to install version {version}.",
     "install_button": "Install",
     "error_title": "Update failed"
+  },
+  "lyrics_report": {
+    "wrong_words": "Report wrong lyrics",
+    "out_of_sync": "Report out of sync",
+    "view_reports": "View lyrics reports",
+    "view_reports_count": "View lyrics reports ({count})",
+    "saved": "Thanks, report saved",
+    "already_reported": "Already reported",
+    "undo": "Undo",
+    "dialog_title": "Lyrics reports",
+    "dialog_desc": "Each report keeps the moment it was sent and the lines around it, so you can play that moment and compare.",
+    "empty": "No reports yet. Right-click a lyrics line to report it.",
+    "kind_wrong_words": "Wrong words",
+    "kind_out_of_sync": "Out of sync",
+    "status_local": "On this device",
+    "status_sent": "Sent",
+    "status_failed": "Not sent",
+    "reported_at": "Reported at {time}",
+    "line_timing": "Line {time}",
+    "no_line": "No line at this moment",
+    "note_placeholder": "What you hear (optional)",
+    "play_moment": "Play this moment",
+    "copy_json": "Copy JSON",
+    "delete": "Delete report",
+    "export": "Export JSON",
+    "copy_all": "Copy all",
+    "clear": "Clear all"
   }
 }

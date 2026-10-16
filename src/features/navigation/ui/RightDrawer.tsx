@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, memo, useCallback, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { usePlayerState, playerEngine } from "@/features/player";
+import { usePlayerState, playerEngine, playLyricsReportMoment } from "@/features/player";
 import SongCardWithMenu from "@/features/player/ui/SongCardWithMenu";
 import { useLyricsStore, type WordData, useLyricsAnimator } from "@/features/lyrics";
+import { useLyricsReportMenu, readAudioPositionMs } from "@/features/lyrics/report";
 import { useTranslation } from "@/languages";
 import { useToast, ReorderDropPlaceholder, FloatingDragCard } from "@/shared/ui";
 import { useListReorder } from "@/shared/hooks";
@@ -346,6 +347,19 @@ function RightDrawer({ activeTab, onTabChange, onClose }: RightDrawerProps) {
   }, [lyricsQuality, activeTab, player.currentTrack?.id, t, toast]);
 
   const isPlaying = player.status === "playing";
+
+  const positionMsRef = useRef(player.positionMs);
+  positionMsRef.current = player.positionMs;
+  const getReportPositionMs = useCallback(
+    () => readAudioPositionMs(positionMsRef.current),
+    [],
+  );
+  const lyricsReport = useLyricsReportMenu({
+    origin: "drawer",
+    track: isMatchingTrack ? player.currentTrack : null,
+    getPositionMs: getReportPositionMs,
+    onPlayMoment: playLyricsReportMoment,
+  });
 
   const [activeLineIndices, setActiveLineIndices] = useState<number[]>([]);
   const activeLineIndicesRef = useRef<number[]>([]);
@@ -1006,6 +1020,9 @@ function RightDrawer({ activeTab, onTabChange, onClose }: RightDrawerProps) {
                           returnToFollowingMode(i, "smooth");
                           playerEngine.seek(line.timeMs, true);
                         }}
+                        onContextMenu={(e) =>
+                          lyricsReport.openMenu(e, { lineIndex: i, lineText: displayText })
+                        }
                       >
                         {displayText ? (
                           renderWordLevel(
@@ -1124,6 +1141,11 @@ function RightDrawer({ activeTab, onTabChange, onClose }: RightDrawerProps) {
                         key={i}
                         className="relative text-[25px] font-[700] text-text-primary min-h-[24px]"
                         style={customStyle}
+                        onContextMenu={(e) =>
+                          displayText
+                            ? lyricsReport.openMenu(e, { lineIndex: i, lineText: displayText })
+                            : undefined
+                        }
                       >
                         {displayText || "\n"}
                       </div>
@@ -1139,6 +1161,7 @@ function RightDrawer({ activeTab, onTabChange, onClose }: RightDrawerProps) {
           </div>
         ))}
       </div>
+      {lyricsReport.element}
     </div>
   );
 }

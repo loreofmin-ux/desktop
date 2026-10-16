@@ -900,5 +900,32 @@
     "downloaded_desc": "Reinicia Liner para instalar la versión {version}.",
     "install_button": "Instalar",
     "error_title": "Error en la actualización"
+  },
+  "lyrics_report": {
+    "wrong_words": "Reportar letra incorrecta",
+    "out_of_sync": "Reportar desincronización",
+    "view_reports": "Ver reportes de letras",
+    "view_reports_count": "Ver reportes de letras ({count})",
+    "saved": "Gracias, reporte guardado",
+    "already_reported": "Ya reportado",
+    "undo": "Deshacer",
+    "dialog_title": "Reportes de letras",
+    "dialog_desc": "Cada reporte guarda el momento en que se envió y las líneas cercanas, para reproducir ese momento y comparar.",
+    "empty": "Aún no hay reportes. Haz clic derecho en una línea para reportarla.",
+    "kind_wrong_words": "Letra incorrecta",
+    "kind_out_of_sync": "Desincronizada",
+    "status_local": "En este dispositivo",
+    "status_sent": "Enviado",
+    "status_failed": "No enviado",
+    "reported_at": "Reportado en {time}",
+    "line_timing": "Línea {time}",
+    "no_line": "Ninguna línea en este momento",
+    "note_placeholder": "Lo que escuchas (opcional)",
+    "play_moment": "Reproducir este momento",
+    "copy_json": "Copiar JSON",
+    "delete": "Eliminar reporte",
+    "export": "Exportar JSON",
+    "copy_all": "Copiar todo",
+    "clear": "Borrar todo"
   }
 }
