@@ -970,5 +970,20 @@
     "export": "Экспорт JSON",
     "copy_all": "Копировать все",
     "clear": "Очистить все"
+  },
+  "changelog": {
+    "settings_button": "Что нового",
+    "update_title": "Что нового в Liner v{version}",
+    "update_desc": "Вот что изменилось с последнего обновления.",
+    "history_title": "Чейнджлог",
+    "history_desc": "Изменения в каждой версии Liner.",
+    "all_releases": "Все релизы",
+    "empty": "Для этой версии пока нет списка изменений.",
+    "close_button": "Понятно",
+    "types": {
+      "new": "Новое",
+      "improved": "Улучшено",
+      "fixed": "Исправлено"
+    }
   }
 }
