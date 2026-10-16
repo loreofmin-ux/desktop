@@ -11,6 +11,24 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "new",
         text: {
+          en: "Report wrong lyrics: right-click a lyrics line in the side panel or in fullscreen, then choose \"Report wrong lyrics\" or \"Report out of sync\". The moment of the song is saved with the line, and \"View lyrics reports\" in the same menu lists your reports and replays that moment.",
+          ru: "Жалобы на текст: нажмите правой кнопкой на строку текста в боковой панели или в полноэкранном режиме и выберите «Сообщить о неверном тексте» или «Сообщить о рассинхроне». Вместе со строкой сохраняется момент песни, а пункт «Жалобы на текст» в том же меню показывает ваши жалобы и проигрывает этот момент.",
+          uk: "Скарги на текст: натисніть правою кнопкою на рядок тексту в бічній панелі або в повноекранному режимі й виберіть «Повідомити про неправильний текст» або «Повідомити про розсинхрон». Разом із рядком зберігається момент пісні, а пункт «Скарги на текст» у тому ж меню показує ваші скарги й відтворює цей момент.",
+          es: "Reportar letras incorrectas: haz clic derecho en una línea de la letra en el panel lateral o en pantalla completa y elige «Reportar letra incorrecta» o «Reportar desincronización». Se guarda el momento de la canción con la línea, y «Ver reportes de letras» en el mismo menú muestra tus reportes y reproduce ese momento.",
+        },
+      },
+      {
+        type: "new",
+        text: {
+          en: "Offline mode: when Liner's servers are down or you have no connection, the \"Downloaded music\" button on the error screen opens the tracks already saved on this computer, and they play without the server.",
+          ru: "Офлайн-режим: когда серверы Liner недоступны или нет интернета, кнопка «Скачанная музыка» на экране ошибки открывает треки, уже сохранённые на компьютере, и они играют без сервера.",
+          uk: "Офлайн-режим: коли сервери Liner недоступні або немає інтернету, кнопка «Завантажена музика» на екрані помилки відкриває треки, уже збережені на комп'ютері, і вони грають без сервера.",
+          es: "Modo sin conexión: cuando los servidores de Liner fallan o no tienes conexión, el botón «Música descargada» de la pantalla de error abre las pistas ya guardadas en este ordenador, que se reproducen sin el servidor.",
+        },
+      },
+      {
+        type: "new",
+        text: {
           en: "Spanish translation.",
           ru: "Испанский язык интерфейса.",
           uk: "Іспанська мова інтерфейсу.",
@@ -69,6 +87,15 @@ export const CHANGELOG: ChangelogEntry[] = [
           ru: "Окно снова можно перемещать в Linux с Wayland.",
           uk: "Вікно знову можна переміщати в Linux з Wayland.",
           es: "La ventana se puede mover en Linux con Wayland.",
+        },
+      },
+      {
+        type: "fixed",
+        text: {
+          en: "The overlay now also shows when you switch away from Liner with Alt+Tab.",
+          ru: "Оверлей теперь появляется и при переключении с Liner через Alt+Tab.",
+          uk: "Оверлей тепер з'являється і під час перемикання з Liner через Alt+Tab.",
+          es: "El overlay ahora también aparece al salir de Liner con Alt+Tab.",
         },
       },
       {

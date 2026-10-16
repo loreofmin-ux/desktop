@@ -15,6 +15,8 @@ export interface ChangelogEntry {
 }
 
 export const LAST_SEEN_STORAGE_KEY = "liner_changelog_last_seen_v1";
+// set to "1" to show the latest entry on next launch, for testing
+export const PREVIEW_STORAGE_KEY = "liner_changelog_preview";
 
 // keys written by an install that ran before the changelog existed
 const EXISTING_INSTALL_KEYS = [
@@ -115,6 +117,17 @@ export function writeLastSeen(version: string): void {
 export function hasExistingInstall(): boolean {
   try {
     return EXISTING_INSTALL_KEYS.some((key) => localStorage.getItem(key) !== null);
+  } catch {
+    return false;
+  }
+}
+
+// reads and clears the one-shot preview flag
+export function takePreviewFlag(): boolean {
+  try {
+    if (localStorage.getItem(PREVIEW_STORAGE_KEY) !== "1") return false;
+    localStorage.removeItem(PREVIEW_STORAGE_KEY);
+    return true;
   } catch {
     return false;
   }
