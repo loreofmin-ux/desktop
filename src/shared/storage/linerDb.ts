@@ -392,6 +392,73 @@ class LinerDb {
     return total;
   }
 
+  // tracks that have both metadata and a cached audio file, most recently played first.
+  // walks keys and the lastPlayedAt index only, so no audio blob is read.
+  async getDownloadedTracks(): Promise<CachedTrackRecord[]> {
+    const order = await this.runTransaction("audio", "readonly", (store) => {
+      return new Promise<string[]>((resolve) => {
+        const ids: string[] = [];
+        const seen = new Set<string>();
+        const keysReq = store.getAllKeys();
+        keysReq.onerror = () => resolve(ids);
+        keysReq.onsuccess = () => {
+          const allIds = (keysReq.result as IDBValidKey[]).map(String);
+          if (!store.indexNames.contains("lastPlayedAt")) {
+            resolve(allIds);
+            return;
+          }
+          const cursorReq = store.index("lastPlayedAt").openKeyCursor(null, "prev");
+          cursorReq.onerror = () => resolve(allIds);
+          cursorReq.onsuccess = () => {
+            const cursor = cursorReq.result;
+            if (cursor) {
+              const id = String(cursor.primaryKey);
+              if (!seen.has(id)) {
+                seen.add(id);
+                ids.push(id);
+              }
+              cursor.continue();
+            } else {
+              for (const id of allIds) {
+                if (!seen.has(id)) ids.push(id);
+              }
+              resolve(ids);
+            }
+          };
+        };
+      });
+    });
+
+    const ids =
+      order ??
+      Array.from(this.memAudio.values())
+        .sort((a, b) => (b.lastPlayedAt ?? b.savedAt) - (a.lastPlayedAt ?? a.savedAt))
+        .map((r) => r.trackId);
+
+    if (ids.length === 0) return [];
+
+    const stored = await this.runTransaction("tracks", "readonly", (store) => {
+      return new Promise<CachedTrackRecord[]>((resolve) => {
+        const req = store.getAll();
+        req.onsuccess = () => resolve((req.result as CachedTrackRecord[]) || []);
+        req.onerror = () => resolve([]);
+      });
+    });
+
+    const byId = new Map<string, CachedTrackRecord>();
+    for (const record of stored ?? []) {
+      if (record?.id) byId.set(record.id, record);
+    }
+    for (const [id, record] of this.memTracks) byId.set(id, record);
+
+    const tracks: CachedTrackRecord[] = [];
+    for (const id of ids) {
+      const track = byId.get(id);
+      if (track) tracks.push(track);
+    }
+    return tracks;
+  }
+
   async getLyrics(trackId: string): Promise<CachedLyricsRecord | null> {
     const mem = this.memLyrics.get(trackId);
     if (mem) return mem;
