@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { FaTelegramPlane, FaGithub, FaGlobe } from "react-icons/fa";
-import { Refresh1Line, CheckLine } from "@mingcute/react";
+import { Refresh1Line, CheckLine, NotebookLine } from "@mingcute/react";
 import { QuestionCircle } from "@solar-icons/react";
 import Button from "@/shared/ui/Button";
 import { useToast } from "@/shared/ui";
@@ -21,6 +21,7 @@ import scanlinesLogo from "@/assets/branding/logo-scanlines.svg";
 import vhsLogo from "@/assets/branding/logo-vhs.svg";
 import { usePlayerStore, type AccentVariant } from "@/features/player";
 import { useUpdaterStore } from "@/features/updater";
+import { useChangelogStore } from "@/features/changelog";
 
 const brandingLogos: Record<Exclude<AccentVariant, "default">, string> = {
   spotify: spotifyLogo,
@@ -113,6 +114,7 @@ export function AboutTab({ searchQuery }: { searchQuery?: string }) {
       "settings.about.tagline",
       "settings.about.updates_title",
       "settings.about.build_info",
+      "changelog.settings_button",
     ];
     return searchableKeys.some((k) =>
       getTranslationsForAllLocales(k).some((txt) => txt.toLowerCase().includes(q)),
@@ -177,8 +179,8 @@ export function AboutTab({ searchQuery }: { searchQuery?: string }) {
           {lastCheckedTime ? ` · ${lastCheckedTime}` : ""}
         </span>
 
-        {/* Update Checker Button */}
-        <div className="w-full flex items-center justify-center mb-[20px]">
+        {/* Update Checker & Changelog Buttons */}
+        <div className="w-full flex items-center justify-center gap-[6px] mb-[20px]">
           <Button
             variant="secondary"
             size="sm"
@@ -193,6 +195,15 @@ export function AboutTab({ searchQuery }: { searchQuery?: string }) {
             {checkingUpdate
               ? t("settings.about.checking_updates")
               : t("settings.about.check_updates")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => useChangelogStore.getState().openHistory()}
+            className="!h-[32px] !px-[16px] !text-[12.5px] !gap-[7px] !rounded-lg"
+          >
+            <NotebookLine size={14} className="text-text-tertiary" />
+            {t("changelog.settings_button")}
           </Button>
         </div>
 

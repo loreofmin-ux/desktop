@@ -900,5 +900,20 @@
     "downloaded_desc": "Reinicia Liner para instalar la versión {version}.",
     "install_button": "Instalar",
     "error_title": "Error en la actualización"
+  },
+  "changelog": {
+    "settings_button": "Novedades",
+    "update_title": "Novedades de Liner v{version}",
+    "update_desc": "Esto es lo que ha cambiado desde tu última actualización.",
+    "history_title": "Registro de cambios",
+    "history_desc": "Cambios de cada versión de Liner.",
+    "all_releases": "Todas las versiones",
+    "empty": "Todavía no hay registro de cambios para esta versión.",
+    "close_button": "Entendido",
+    "types": {
+      "new": "Nuevo",
+      "improved": "Mejorado",
+      "fixed": "Corregido"
+    }
   }
 }

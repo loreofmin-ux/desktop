@@ -81,6 +81,7 @@ const SETTING_ITEMS: { tabId: TabId; titleKey: string; descKey?: string }[] = [
   // About
   { tabId: "About", titleKey: "settings.about.liner", descKey: "common.app.version" },
   { tabId: "About", titleKey: "settings.notifications.test_button" },
+  { tabId: "About", titleKey: "changelog.settings_button", descKey: "changelog.history_desc" },
 ];
 
 const font = { fontFamily: "var(--font-inter), sans-serif" } as const;

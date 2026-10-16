@@ -936,5 +936,20 @@
     "downloaded_desc": "Перезапустіть Liner для встановлення версії {version}.",
     "install_button": "Встановити",
     "error_title": "Помилка оновлення"
+  },
+  "changelog": {
+    "settings_button": "Що нового",
+    "update_title": "Що нового в Liner v{version}",
+    "update_desc": "Ось що змінилося з останнього оновлення.",
+    "history_title": "Чейнджлог",
+    "history_desc": "Зміни в кожній версії Liner.",
+    "all_releases": "Усі релізи",
+    "empty": "Для цієї версії ще немає списку змін.",
+    "close_button": "Зрозуміло",
+    "types": {
+      "new": "Нове",
+      "improved": "Покращено",
+      "fixed": "Виправлено"
+    }
   }
 }

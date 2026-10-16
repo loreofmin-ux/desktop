@@ -899,5 +899,20 @@
     "downloaded_desc": "Restart Liner to install version {version}.",
     "install_button": "Install",
     "error_title": "Update failed"
+  },
+  "changelog": {
+    "settings_button": "What's new",
+    "update_title": "What's new in Liner v{version}",
+    "update_desc": "Here is what changed since your last update.",
+    "history_title": "Changelog",
+    "history_desc": "Changes in each version of Liner.",
+    "all_releases": "All releases",
+    "empty": "No changelog for this version yet.",
+    "close_button": "Got it",
+    "types": {
+      "new": "New",
+      "improved": "Improved",
+      "fixed": "Fixed"
+    }
   }
 }
