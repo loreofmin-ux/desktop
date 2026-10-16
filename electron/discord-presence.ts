@@ -12,6 +12,8 @@ const OP_PING = 3;
 const OP_PONG = 4;
 const RETRY_MS = 15_000;
 const LISTENING = 2;
+// status line reads "Listening to <state>" (the artist) instead of "Listening to <app name>"
+const STATUS_DISPLAY_STATE = 1;
 // discord shows up to 2 buttons (label <= 32 chars), only to people viewing the profile, not to yourself
 const BUTTONS = [
   { label: "Download Liner", url: "https://github.com/tryliner/desktop/releases" },
@@ -47,6 +49,7 @@ export function buildActivity(state: TouchBarStatePayload, now: number): Record<
   const cover = track.cover && /^https:\/\//.test(track.cover) && track.cover.length <= 256 ? track.cover : undefined;
   return {
     type: LISTENING,
+    status_display_type: STATUS_DISPLAY_STATE,
     details: field(track.title),
     state: field(track.artist || "Liner"),
     timestamps: durationMs > 0 ? { start, end: start + durationMs } : { start },

@@ -29,6 +29,7 @@ describe("discord presence payload", () => {
   it("shows a listening activity with a progress bar while playing", () => {
     const activity = buildActivity(state(), 1_000_000) as any;
     expect(activity.type).toBe(2);
+    expect(activity.status_display_type).toBe(1); // "Listening to Artist", not "Listening to Liner"
     expect(activity.details).toBe("pyro - slowed");
     expect(activity.state).toBe("Artist");
     expect(activity.timestamps).toEqual({ start: 970_000, end: 1_150_000 });
