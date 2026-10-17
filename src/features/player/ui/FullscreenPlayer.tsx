@@ -18,6 +18,7 @@ import {
 import { AnimatePresence, motion } from "framer-motion";
 import { PlayerUiElements } from "./PlayerUiElements";
 import QueuePanel from "./QueuePanel";
+import { UpNextBanner } from "./UpNextBanner";
 import { DownLine } from "@mingcute/react";
 import { Sidebar } from "@solar-icons/react";
 import { preloadCoverArt, useCoverSrc } from "@/features/covers";
@@ -381,8 +382,11 @@ export function FullscreenPlayer({
       <div className="absolute inset-0 z-[1] bg-black/40" />
 
       <div className="absolute inset-0 z-10 flex">
-        <div className="flex-1 flex flex-col items-center justify-center gap-5">
+        <div className="relative flex-1 flex flex-col items-center justify-center gap-5">
           <PlayerUiElements onClose={onClose} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-[20px] flex justify-center">
+            <UpNextBanner />
+          </div>
         </div>
 
         <div className="flex-1 h-full min-h-0 pl-2 pr-6 flex flex-col relative">
