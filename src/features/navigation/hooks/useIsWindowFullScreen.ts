@@ -19,18 +19,49 @@ export function isViewportFullScreen(): boolean {
   );
 }
 
-function merge(osFullScreen: boolean | null, viewportFullScreen: boolean) {
-  return Boolean(osFullScreen) || viewportFullScreen;
+interface WindowOsTruth {
+  isFullScreen: boolean | null;
+  isMaximized: boolean | null;
+}
+
+function merge(osTruth: WindowOsTruth, viewportFullScreen: boolean) {
+  // the OS-reported state wins always; the viewport measure only squares
+  // corners when the window is NOT merely maximized (on panel-less
+  // desktops a maximized window also covers the whole screen)
+  return (
+    Boolean(osTruth.isFullScreen) ||
+    (viewportFullScreen && osTruth.isMaximized !== true)
+  );
+}
+
+function mergeWindowOsTruth(
+  current: WindowOsTruth,
+  patch: Partial<WindowOsTruth>,
+): WindowOsTruth {
+  return {
+    isFullScreen:
+      typeof patch.isFullScreen === "boolean"
+        ? patch.isFullScreen
+        : current.isFullScreen,
+    isMaximized:
+      typeof patch.isMaximized === "boolean"
+        ? patch.isMaximized
+        : current.isMaximized,
+  };
 }
 
 /**
  * Tracks the OS window's fullscreen state: hydrates from the main process,
  * follows `window:state-changed` broadcasts, and falls back to measuring
  * the viewport for compositor-driven fullscreen that never produces an
- * electron event (wayland).
+ * electron event (wayland). Maximized windows never trigger the viewport
+ * fallback (see merge).
  */
 export function useIsWindowFullScreen(): boolean {
-  const [osFullScreen, setOsFullScreen] = useState<boolean | null>(null);
+  const [osTruth, setOsTruth] = useState<WindowOsTruth>({
+    isFullScreen: null,
+    isMaximized: null,
+  });
   const [viewportFullScreen, setViewportFullScreen] = useState(
     isViewportFullScreen,
   );
@@ -42,12 +73,28 @@ export function useIsWindowFullScreen(): boolean {
 
     // hydrate initial os window state
     window.linerElectron.isFullScreen?.().then((fs) => {
-      if (typeof fs === "boolean") setOsFullScreen(fs);
+      if (typeof fs === "boolean") {
+        setOsTruth((current) =>
+          mergeWindowOsTruth(current, { isFullScreen: fs }),
+        );
+      }
+    });
+    window.linerElectron.isMaximized?.().then((max) => {
+      if (typeof max === "boolean") {
+        setOsTruth((current) =>
+          mergeWindowOsTruth(current, { isMaximized: max }),
+        );
+      }
     });
 
     // live sync across os fullscreen transitions
     const unsubscribe = window.linerElectron.onWindowStateChange?.((state) => {
-      setOsFullScreen(state.isFullScreen);
+      setOsTruth((current) =>
+        mergeWindowOsTruth(current, {
+          isFullScreen: state.isFullScreen,
+          isMaximized: state.isMaximized,
+        }),
+      );
     });
 
     // compositor-driven fullscreen never sends electron events on wayland,
@@ -61,5 +108,5 @@ export function useIsWindowFullScreen(): boolean {
     };
   }, []);
 
-  return merge(osFullScreen, viewportFullScreen);
+  return merge(osTruth, viewportFullScreen);
 }

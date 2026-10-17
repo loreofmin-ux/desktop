@@ -12,6 +12,7 @@ type Unsubscribe = () => void;
 
 const electronApi = {
   isFullScreen: vi.fn<() => Promise<boolean>>(),
+  isMaximized: vi.fn<() => Promise<boolean>>(),
   onWindowStateChange: vi.fn<(cb: WindowStateCb) => Unsubscribe>(),
 };
 
@@ -43,6 +44,7 @@ describe("useIsWindowFullScreen", () => {
     window.linerElectron = {
       ...window.linerElectron,
       isFullScreen: electronApi.isFullScreen,
+      isMaximized: electronApi.isMaximized,
       onWindowStateChange: electronApi.onWindowStateChange,
     } as typeof window.linerElectron;
   });
@@ -73,6 +75,7 @@ describe("useIsWindowFullScreen", () => {
 
   function stubWindow(initialFullScreen: boolean) {
     electronApi.isFullScreen.mockResolvedValue(initialFullScreen);
+    electronApi.isMaximized.mockResolvedValue(false);
     electronApi.onWindowStateChange.mockImplementation((cb) => {
       emitWindowState = cb;
       return () => {
@@ -146,25 +149,42 @@ describe("useIsWindowFullScreen", () => {
     expect(latest).toBe(false);
   });
 
-  it("keeps the os window truth even when the viewport has a border hit", async () => {
-    // electron tracked the fullscreen (os truth) while a border reports the
-    // viewport one pixel shy; the os state wins
+  it("keeps maximized windows rounded even when the viewport covers the screen", async () => {
     stubWindow(false);
     mount();
     await act(async () => {
       await Promise.resolve();
     });
 
+    // panel-less desktop: maximize also covers the whole screen, so the
+    // os truth must gate the viewport fallback
     act(() => {
-      emitWindowState?.({ isFullScreen: true, isMaximized: false });
+      emitWindowState?.({ isFullScreen: false, isMaximized: true });
     });
-    expect(latest).toBe(true);
 
     await act(async () => {
-      window.innerWidth = 1919;
+      window.innerWidth = 1920;
       window.innerHeight = 1080;
       window.dispatchEvent(new Event("resize"));
       await Promise.resolve();
+    });
+    expect(latest).toBe(false);
+
+    // leaving maximize is enough for the windowed look again
+    act(() => {
+      emitWindowState?.({ isFullScreen: false, isMaximized: false });
+    });
+    await act(async () => {
+      window.innerWidth = 1200;
+      window.innerHeight = 780;
+      window.dispatchEvent(new Event("resize"));
+      await Promise.resolve();
+    });
+    expect(latest).toBe(false);
+
+    // a real fullscreen event wins regardless of the maximize flag
+    act(() => {
+      emitWindowState?.({ isFullScreen: true, isMaximized: false });
     });
     expect(latest).toBe(true);
   });
