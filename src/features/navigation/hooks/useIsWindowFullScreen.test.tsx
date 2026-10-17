@@ -17,7 +17,6 @@ const electronApi = {
 
 let latest: boolean | null = null;
 let emitWindowState: WindowStateCb | null = null;
-let unsubscribeSpy: Unsubscribe | null = null;
 
 function Harness() {
   latest = useIsWindowFullScreen();
@@ -29,6 +28,18 @@ describe("useIsWindowFullScreen", () => {
   let root: Root | null = null;
 
   beforeEach(() => {
+    // windowed-by-default viewport (1200x780 floating shell on 1920x1080)
+    window.innerWidth = 1200;
+    window.innerHeight = 780;
+    Object.defineProperty(window.screen, "width", {
+      value: 1920,
+      configurable: true,
+    });
+    Object.defineProperty(window.screen, "height", {
+      value: 1080,
+      configurable: true,
+    });
+
     window.linerElectron = {
       ...window.linerElectron,
       isFullScreen: electronApi.isFullScreen,
@@ -48,7 +59,6 @@ describe("useIsWindowFullScreen", () => {
     document.body.innerHTML = "";
     delete (window as { linerElectron?: unknown }).linerElectron;
     emitWindowState = null;
-    unsubscribeSpy = null;
     vi.clearAllMocks();
   });
 
@@ -61,18 +71,14 @@ describe("useIsWindowFullScreen", () => {
     });
   }
 
-  function stubWindow(
-    initialFullScreen: boolean,
-    onWindowsState = (cb: WindowStateCb): Unsubscribe => {
+  function stubWindow(initialFullScreen: boolean) {
+    electronApi.isFullScreen.mockResolvedValue(initialFullScreen);
+    electronApi.onWindowStateChange.mockImplementation((cb) => {
       emitWindowState = cb;
-      unsubscribeSpy = () => {
+      return () => {
         /* unsubscribed */
       };
-      return unsubscribeSpy;
-    },
-  ) {
-    electronApi.isFullScreen.mockResolvedValue(initialFullScreen);
-    electronApi.onWindowStateChange.mockImplementation(onWindowsState);
+    });
   }
 
   it("starts square-by-default: false with a windowed os window", async () => {
@@ -112,14 +118,67 @@ describe("useIsWindowFullScreen", () => {
     expect(latest).toBe(false);
   });
 
+  it("falls back to the viewport when the compositor fullscreens without events", async () => {
+    stubWindow(false);
+    mount();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(latest).toBe(false);
+
+    // meta-f on kde wayland: the viewport covers the whole screen and no
+    // electron event fires
+    await act(async () => {
+      window.innerWidth = 1920;
+      window.innerHeight = 1080;
+      window.dispatchEvent(new Event("resize"));
+      await Promise.resolve();
+    });
+    expect(latest).toBe(true);
+
+    // leaving fullscreen restores the windowed shell
+    await act(async () => {
+      window.innerWidth = 1200;
+      window.innerHeight = 780;
+      window.dispatchEvent(new Event("resize"));
+      await Promise.resolve();
+    });
+    expect(latest).toBe(false);
+  });
+
+  it("keeps the os window truth even when the viewport has a border hit", async () => {
+    // electron tracked the fullscreen (os truth) while a border reports the
+    // viewport one pixel shy; the os state wins
+    stubWindow(false);
+    mount();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    act(() => {
+      emitWindowState?.({ isFullScreen: true, isMaximized: false });
+    });
+    expect(latest).toBe(true);
+
+    await act(async () => {
+      window.innerWidth = 1919;
+      window.innerHeight = 1080;
+      window.dispatchEvent(new Event("resize"));
+      await Promise.resolve();
+    });
+    expect(latest).toBe(true);
+  });
+
   it("unsubscribes from broadcasts on unmount", async () => {
     let unsubscribed = false;
-    stubWindow(false, (cb) => {
+    electronApi.isFullScreen.mockResolvedValue(false);
+    electronApi.onWindowStateChange.mockImplementation((cb) => {
       emitWindowState = cb;
       return () => {
         unsubscribed = true;
       };
     });
+
     mount();
     await act(async () => {
       await Promise.resolve();
