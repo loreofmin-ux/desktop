@@ -371,7 +371,8 @@ export class DiscordRpcManager {
       // Action buttons linking to song or tryliner.fun (Discord allows up to 2 buttons)
       const buttons: Array<{ label: string; url: string }> = [];
 
-      if (this.settings.showButton && track.id) {
+      // local files have no catalog page to open
+      if (this.settings.showButton && track.id && !track.id.startsWith("local:")) {
         buttons.push({
           label: "Listen on Liner",
           url: `https://link.tryliner.fun/track?id=${encodeURIComponent(track.id)}`,
