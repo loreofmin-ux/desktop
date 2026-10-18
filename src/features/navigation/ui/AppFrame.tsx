@@ -54,6 +54,7 @@ import {
 } from "@/features/library";
 import { SettingsModal, useCustomizationStore, getBlockStyle } from "@/features/settings";
 import { UpdateModal, UpdateToastBridge } from "@/features/updater";
+import { ChangelogModal } from "@/features/changelog";
 
 
 interface AppFrameProps {
@@ -1079,6 +1080,7 @@ export default function AppFrame({ children }: AppFrameProps) {
       <ImportReviewModal />
       <SettingsModal />
       <UpdateModal />
+      <ChangelogModal />
       <UpdateToastBridge />
       <WindowControls
         isFullscreen={isFullscreenPlayer}
