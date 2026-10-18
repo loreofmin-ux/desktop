@@ -92,6 +92,8 @@ export default function AppFrame({ children }: AppFrameProps) {
   });
   const fullscreenPlayerOpen = usePlayerStore((state) => state.fullscreen);
   const setFullscreenPlayerOpen = usePlayerStore((state) => state.setFullscreen);
+  const fullscreenQueueOpen = usePlayerStore((state) => state.fullscreenQueueOpen);
+  const setFullscreenQueueOpen = usePlayerStore((state) => state.setFullscreenQueueOpen);
   const [fullscreenEffectsReady, setFullscreenEffectsReady] = useState(false);
 
   useEffect(() => {
@@ -256,6 +258,16 @@ export default function AppFrame({ children }: AppFrameProps) {
   );
   const closeRightPanel = useCallback(() => setQueuePopupOpen(false), []);
 
+  // in the player the queue sidebar is the right panel; lyrics are already on screen
+  const openFullscreenPanel = useCallback(
+    (tab: "queue" | "lyrics") => setFullscreenQueueOpen(tab === "queue"),
+    [setFullscreenQueueOpen],
+  );
+  const closeFullscreenPanel = useCallback(
+    () => setFullscreenQueueOpen(false),
+    [setFullscreenQueueOpen],
+  );
+
   const isBackNavigableRoute =
     pathname === "/artist" ||
     pathname === "/library/playlist" ||
@@ -274,10 +286,10 @@ export default function AppFrame({ children }: AppFrameProps) {
     searchOpen,
     openSearch,
     closeSearch,
-    rightPanelOpen: queuePopupOpen,
-    rightPanelTab: rightDrawerTab,
-    openRightPanel,
-    closeRightPanel,
+    rightPanelOpen: isFullscreenPlayer ? fullscreenQueueOpen : queuePopupOpen,
+    rightPanelTab: isFullscreenPlayer ? "queue" : rightDrawerTab,
+    openRightPanel: isFullscreenPlayer ? openFullscreenPanel : openRightPanel,
+    closeRightPanel: isFullscreenPlayer ? closeFullscreenPanel : closeRightPanel,
     fullscreenOpen: isFullscreenPlayer,
     openFullscreen: openFullscreenPlayer,
     closeFullscreen: handleCloseFullscreen,

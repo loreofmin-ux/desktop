@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import { usePlayerState } from "../hooks/usePlayerState";
 import { playerEngine } from "../engine/playerEngine";
 import { playLyricsReportMoment } from "../engine/playAtPosition";
+import { usePlayerStore } from "../store/playerStore";
 import {
   useLyricsStore,
   LyricsProviderIsland,
@@ -17,7 +18,10 @@ import {
 } from "@/features/lyrics";
 import { AnimatePresence, motion } from "framer-motion";
 import { PlayerUiElements } from "./PlayerUiElements";
+import QueuePanel from "./QueuePanel";
+import { UpNextBanner } from "./UpNextBanner";
 import { DownLine } from "@mingcute/react";
+import { Sidebar } from "@solar-icons/react";
 import { preloadCoverArt, useCoverSrc } from "@/features/covers";
 import "@braccato/core/element";
 import "@braccato/core/styles/variables.css";
@@ -32,6 +36,7 @@ import {
 } from "@/features/lyrics/report";
 
 const BRACCATO_TAG = "braccato-lyrics";
+const QUEUE_SIDEBAR_WIDTH = 380;
 
 interface BraccatoLyricsViewProps {
   lyrics: any[];
@@ -334,6 +339,14 @@ export function FullscreenPlayer({
     }
   }, [player.currentTrack, onClose]);
 
+  const queueOpen = player.fullscreenQueueOpen;
+  const setQueueOpen = usePlayerStore((state) => state.setFullscreenQueueOpen);
+
+  // the sidebar starts closed every time the player opens
+  useEffect(() => {
+    return () => usePlayerStore.getState().setFullscreenQueueOpen(false);
+  }, []);
+
   const {
     braccatoLyrics,
     rawFormat,
@@ -397,8 +410,11 @@ export function FullscreenPlayer({
       <div className="absolute inset-0 z-[1] bg-black/40" />
 
       <div className="absolute inset-0 z-10 flex">
-        <div className="flex-1 flex flex-col items-center justify-center gap-5">
+        <div className="relative flex-1 flex flex-col items-center justify-center gap-5">
           <PlayerUiElements onClose={onClose} />
+          <div className="pointer-events-none absolute inset-x-0 bottom-[20px] flex justify-center">
+            <UpNextBanner />
+          </div>
         </div>
 
         <div className="flex-1 h-full min-h-0 pl-2 pr-6 flex flex-col relative">
@@ -512,6 +528,48 @@ export function FullscreenPlayer({
         className="absolute top-[12px] left-[12px] z-30 inline-flex h-[32px] w-[32px] items-center justify-center rounded-lg border-none bg-black/50 backdrop-blur-xl text-white/80 hover:text-white hover:bg-white/10 active:scale-[0.94] transition-all cursor-pointer select-none pointer-events-auto"
       >
         <DownLine size={18} />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {queueOpen && (
+          <motion.aside
+            key="fullscreen-queue"
+            aria-label={t("player.queue")}
+            initial={{ x: QUEUE_SIDEBAR_WIDTH + 12, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: QUEUE_SIDEBAR_WIDTH + 12, opacity: 0 }}
+            transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+            data-no-window-drag
+            className="absolute top-[56px] right-[12px] bottom-[12px] z-20 flex flex-col overflow-hidden rounded-2xl bg-black/50 backdrop-blur-2xl shadow-[-16px_0_36px_rgba(0,0,0,0.3)]"
+            style={{ width: QUEUE_SIDEBAR_WIDTH }}
+          >
+            <p
+              className="m-0 shrink-0 px-[18px] pt-[16px] pb-[8px] text-[15px] font-[600] text-white select-none"
+              style={{ letterSpacing: "-0.03em" }}
+            >
+              {t("player.queue")}
+            </p>
+            <div className="relative flex-1 min-h-0">
+              <QueuePanel onNavigate={onClose} />
+            </div>
+          </motion.aside>
+        )}
+      </AnimatePresence>
+
+      <button
+        type="button"
+        aria-label={t("player.queue")}
+        aria-pressed={queueOpen}
+        title={t("player.queue")}
+        onClick={() => setQueueOpen(!queueOpen)}
+        data-no-window-drag
+        className={`absolute top-[12px] right-[108px] z-30 inline-flex h-[32px] w-[32px] items-center justify-center rounded-lg border-none backdrop-blur-xl active:scale-[0.94] transition-all cursor-pointer select-none pointer-events-auto ${
+          queueOpen
+            ? "bg-white/15 text-white"
+            : "bg-black/50 text-white/80 hover:text-white hover:bg-white/10"
+        }`}
+      >
+        <Sidebar size={18} weight={queueOpen ? "Bold" : "Outline"} />
       </button>
     </div>
   );
