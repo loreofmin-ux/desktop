@@ -8,7 +8,7 @@ import type { TouchBarStatePayload } from "./touchbar";
 
 const state = (patch: Partial<TouchBarStatePayload> = {}): TouchBarStatePayload => ({
   status: "playing",
-  track: { id: "t1", title: "pyro - slowed", artist: "Artist", album: "Album", cover: "https://i.ytimg.com/vi/x/hq.jpg", durationMs: 180_000 },
+  track: { id: "dQw4w9WgXcQ", title: "pyro - slowed", artist: "Artist", album: "Album", cover: "https://i.ytimg.com/vi/x/hq.jpg", durationMs: 180_000 },
   positionMs: 30_000,
   durationMs: 180_000,
   volume: 1,
@@ -34,8 +34,23 @@ describe("discord presence payload", () => {
     expect(activity.state).toBe("Artist");
     expect(activity.timestamps).toEqual({ start: 970_000, end: 1_150_000 });
     expect(activity.assets.large_image).toBe("https://i.ytimg.com/vi/x/hq.jpg");
-    expect(activity.buttons.map((b: { label: string }) => b.label)).toEqual(["Download Liner"]);
+    expect(activity.buttons).toEqual([
+      { label: "Listen on Liner", url: "https://link.tryliner.fun/track?id=dQw4w9WgXcQ" },
+      { label: "Download Liner", url: "https://github.com/tryliner/desktop/releases" },
+    ]);
     expect(activity.buttons.every((b: { label: string; url: string }) => b.label.length <= 32 && b.url.startsWith("https://"))).toBe(true);
+  });
+
+  it("falls back to the download button without a valid track id", () => {
+    const noId = buildActivity(state({ track: { title: "X", artist: "A" } }), 0) as any;
+    expect(noId.buttons).toEqual([{ label: "Download Liner", url: "https://github.com/tryliner/desktop/releases" }]);
+    const local = buildActivity(state({ track: { id: "local:file.mp3", title: "X", artist: "A" } }), 0) as any;
+    expect(local.buttons.map((b: { label: string }) => b.label)).toEqual(["Download Liner"]);
+  });
+
+  it("hides the listen button when the user turns it off", () => {
+    const activity = buildActivity(state(), 0, false) as any;
+    expect(activity.buttons.map((b: { label: string }) => b.label)).toEqual(["Download Liner"]);
   });
 
   it("clears on pause and drops non-https covers", () => {

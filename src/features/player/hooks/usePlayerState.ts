@@ -20,6 +20,7 @@ const EMPTY_STATE: PlayerState = {
   accentVariant: "default",
   pauseOnDeviceChange: true,
   discordPresence: true,
+  discordListenButton: true,
   autoplaySimilar: true,
   trackDoubleClickBehavior: "play",
   defaultPlaybackContext: "resume",

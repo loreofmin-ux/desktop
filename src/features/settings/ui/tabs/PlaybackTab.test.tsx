@@ -44,4 +44,23 @@ describe("PlaybackTab — Discord Rich Presence", () => {
     await act(async () => toggle.click());
     expect(usePlayerStore.getState().discordPresence).toBe(true);
   });
+
+  it("shows the Listen on Liner switch only while presence is on", async () => {
+    const findRow = (key: string) => {
+      let el: Element | null | undefined = [...container.querySelectorAll("*")].find(
+        (n) => n.childElementCount === 0 && n.textContent === key,
+      );
+      while (el && !el.querySelector("button")) el = el.parentElement;
+      return el;
+    };
+    usePlayerStore.setState({ discordListenButton: true });
+    await act(async () => root.render(<PlaybackTab />));
+    const row = findRow("settings.discord_presence.listen_button.title");
+    expect(row).toBeTruthy();
+    await act(async () => (row!.querySelector("button") as HTMLButtonElement).click());
+    expect(usePlayerStore.getState().discordListenButton).toBe(false);
+
+    await act(async () => usePlayerStore.setState({ discordPresence: false }));
+    expect(findRow("settings.discord_presence.listen_button.title")).toBeFalsy();
+  });
 });

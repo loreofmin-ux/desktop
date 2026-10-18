@@ -260,6 +260,9 @@ if (!gotTheLock) {
     ipcMain.on("discord:set-enabled", (_event, enabled: unknown) => {
       discordPresence.setEnabled(enabled === true);
     });
+    ipcMain.on("discord:set-listen-button", (_event, show: unknown) => {
+      discordPresence.setListenButton(show === true);
+    });
 
     overlayManager = new OverlayManager(
       path.join(__dirname, "preload.cjs"),

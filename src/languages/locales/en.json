@@ -536,7 +536,11 @@
     },
     "discord_presence": {
       "title": "Discord Rich Presence",
-      "description": "Show the track you're listening to on your Discord profile."
+      "description": "Show the track you're listening to on your Discord profile.",
+      "listen_button": {
+        "title": "Show \"Listen on Liner\" button",
+        "description": "Let people open the track you're playing in Liner from your Discord profile."
+      }
     },
     "track_double_click": {
       "title": "Double-click on track",

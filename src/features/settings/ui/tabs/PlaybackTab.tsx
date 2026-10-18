@@ -33,6 +33,10 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
   const setDiscordPresence = usePlayerStore(
     (state) => state.setDiscordPresence,
   );
+  const discordListenButton = usePlayerStore((state) => state.discordListenButton);
+  const setDiscordListenButton = usePlayerStore(
+    (state) => state.setDiscordListenButton,
+  );
 
   useEffect(() => {
     setMounted(true);
@@ -140,6 +144,24 @@ export function PlaybackTab({ searchQuery }: { searchQuery?: string }) {
           />
         }
       />
+
+      {discordPresence && (
+        <div className="pl-6">
+          <SettingRow
+            title={t("settings.discord_presence.listen_button.title")}
+            description={t("settings.discord_presence.listen_button.description")}
+            titleKey="settings.discord_presence.listen_button.title"
+            descKey="settings.discord_presence.listen_button.description"
+            searchQuery={searchQuery}
+            control={
+              <ToggleSwitch
+                checked={discordListenButton}
+                onChange={setDiscordListenButton}
+              />
+            }
+          />
+        </div>
+      )}
     </SettingSection>
   );
 }

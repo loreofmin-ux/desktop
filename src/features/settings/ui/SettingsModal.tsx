@@ -53,6 +53,7 @@ const SETTING_ITEMS: { tabId: TabId; titleKey: string; descKey?: string }[] = [
   { tabId: "Playback", titleKey: "settings.default_playback_context.title", descKey: "settings.default_playback_context.description" },
   { tabId: "Playback", titleKey: "settings.audio.pause_on_device_change.title", descKey: "settings.audio.pause_on_device_change.description" },
   { tabId: "Playback", titleKey: "settings.discord_presence.title", descKey: "settings.discord_presence.description" },
+  { tabId: "Playback", titleKey: "settings.discord_presence.listen_button.title", descKey: "settings.discord_presence.listen_button.description" },
 
   // Overlay
   { tabId: "Overlay", titleKey: "settings.overlay.position.title", descKey: "settings.overlay.position.description" },

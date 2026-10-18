@@ -573,7 +573,11 @@
     },
     "discord_presence": {
       "title": "Статус в Discord",
-      "description": "Показывать трек, который вы слушаете, в профиле Discord."
+      "description": "Показывать трек, который вы слушаете, в профиле Discord.",
+      "listen_button": {
+        "title": "Кнопка «Listen on Liner»",
+        "description": "Позволяет открыть трек, который вы слушаете, в Liner прямо из вашего профиля Discord."
+      }
     },
     "track_double_click": {
       "title": "Двойной клик по треку",

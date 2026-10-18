@@ -2,6 +2,7 @@ import net from "node:net";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import type { TouchBarStatePayload } from "./touchbar.js";
+import { parseDeeplink } from "./deeplink.js";
 
 // minimal discord rich presence over discord's local ipc socket (no dependency).
 // frame = int32le opcode + int32le length + json; docs: discord.com/developers/docs/topics/rpc
@@ -14,10 +15,15 @@ const RETRY_MS = 15_000;
 const LISTENING = 2;
 // status line reads "Listening to <state>" (the artist) instead of "Listening to <app name>"
 const STATUS_DISPLAY_STATE = 1;
-// discord shows up to 2 buttons (label <= 32 chars), only to people viewing the profile, not to yourself
-const BUTTONS = [
-  { label: "Download Liner", url: "https://github.com/tryliner/desktop/releases" },
-];
+// discord shows up to 2 buttons (label <= 32 chars, https only), only to people viewing the profile, not to yourself
+const DOWNLOAD_BUTTON = { label: "Download Liner", url: "https://github.com/tryliner/desktop/releases" };
+
+// "Listen on Liner" goes through the share redirector, which opens liner://track in the app;
+// the download button stays below it for people who don't have liner yet
+function buttons(trackId: string | undefined, showListen: boolean) {
+  if (!showListen || !trackId || !parseDeeplink(`liner://track?id=${encodeURIComponent(trackId)}`)) return [DOWNLOAD_BUTTON];
+  return [{ label: "Listen on Liner", url: `https://link.tryliner.fun/track?id=${encodeURIComponent(trackId)}` }, DOWNLOAD_BUTTON];
+}
 
 export function encodeFrame(op: number, payload: unknown): Buffer {
   const json = Buffer.from(JSON.stringify(payload), "utf8");
@@ -41,7 +47,7 @@ export function defaultIpcPaths(): string[] {
 const field = (s: string) => s.trim().slice(0, 128).padEnd(2, "​");
 
 // null = clear the presence (paused, stopped, nothing loaded)
-export function buildActivity(state: TouchBarStatePayload, now: number): Record<string, unknown> | null {
+export function buildActivity(state: TouchBarStatePayload, now: number, showListen = true): Record<string, unknown> | null {
   const track = state.track;
   if (!track?.title || !["playing", "buffering", "loading"].includes(state.status)) return null;
   const durationMs = state.durationMs || track.durationMs || 0;
@@ -54,7 +60,7 @@ export function buildActivity(state: TouchBarStatePayload, now: number): Record<
     state: field(track.artist || "Liner"),
     timestamps: durationMs > 0 ? { start, end: start + durationMs } : { start },
     ...(cover ? { assets: { large_image: cover, large_text: field(track.album || track.title) } } : {}),
-    buttons: BUTTONS,
+    buttons: buttons(track.id, showListen),
   };
 }
 
@@ -67,6 +73,7 @@ export class DiscordPresence {
   private pendingKey = "";
   private pending: Record<string, unknown> | null = null;
   private enabled = true;
+  private showListen = true;
 
   constructor(
     private readonly clientId: string,
@@ -85,9 +92,16 @@ export class DiscordPresence {
     }
   }
 
+  setListenButton(show: boolean): void {
+    if (show === this.showListen) return;
+    this.showListen = show;
+    // resend on the next state tick (every 250 ms) so the buttons change without waiting for a new track
+    this.lastKey = "";
+  }
+
   update(state: TouchBarStatePayload, now = Date.now()): void {
     if (!this.clientId || !this.enabled) return;
-    const activity = buildActivity(state, now);
+    const activity = buildActivity(state, now, this.showListen);
     // renderer sends every 250 ms; only talk to discord on track/status change or a seek (>2 s drift)
     const start = (activity?.timestamps as { start: number } | undefined)?.start ?? 0;
     const key = activity ? `${state.track?.id}|${state.status}|${Math.round(start / 2000)}` : "none";

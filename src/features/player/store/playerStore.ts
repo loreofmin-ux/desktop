@@ -54,6 +54,7 @@ export interface SessionState {
   accentVariant: AccentVariant;
   pauseOnDeviceChange: boolean;
   discordPresence: boolean;
+  discordListenButton: boolean;
   autoplaySimilar: boolean;
   trackDoubleClickBehavior: TrackDoubleClickBehavior;
   defaultPlaybackContext: DefaultPlaybackContext;
@@ -109,6 +110,7 @@ export interface PlayerStore extends PlayerState {
   setAccentVariant: (variant: AccentVariant) => void;
   setPauseOnDeviceChange: (value: boolean) => void;
   setDiscordPresence: (value: boolean) => void;
+  setDiscordListenButton: (value: boolean) => void;
   setAutoplaySimilar: (value: boolean) => void;
   setTrackDoubleClickBehavior: (value: TrackDoubleClickBehavior) => void;
   setDefaultPlaybackContext: (value: DefaultPlaybackContext) => void;
@@ -153,6 +155,7 @@ export const usePlayerStore = create<PlayerStore>()(
       accentVariant: "default",
       pauseOnDeviceChange: true,
       discordPresence: true,
+      discordListenButton: true,
       autoplaySimilar: true,
       trackDoubleClickBehavior: "play",
       defaultPlaybackContext: "resume",
@@ -197,6 +200,8 @@ export const usePlayerStore = create<PlayerStore>()(
         set({ pauseOnDeviceChange }),
       setDiscordPresence: (discordPresence: boolean) =>
         set({ discordPresence }),
+      setDiscordListenButton: (discordListenButton: boolean) =>
+        set({ discordListenButton }),
       setAutoplaySimilar: (autoplaySimilar: boolean) =>
         set({ autoplaySimilar }),
       setTrackDoubleClickBehavior: (trackDoubleClickBehavior: TrackDoubleClickBehavior) =>
@@ -307,6 +312,7 @@ export const usePlayerStore = create<PlayerStore>()(
         accentVariant: state.accentVariant,
         pauseOnDeviceChange: state.pauseOnDeviceChange,
         discordPresence: state.discordPresence,
+        discordListenButton: state.discordListenButton,
         autoplaySimilar: state.autoplaySimilar,
         trackDoubleClickBehavior: state.trackDoubleClickBehavior,
         defaultPlaybackContext: state.defaultPlaybackContext,
