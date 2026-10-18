@@ -6,6 +6,9 @@ import { buildOfflineDump, downloadDump, type SaveDumpResult } from "../lib/dump
 export const TRIP_COUNT = 3;
 export const TRIP_WINDOW_MS = 60_000;
 export const MAX_FAILURES = 20;
+// successful answers in a row needed to leave offline mode, so a flapping server
+// doesn't bounce the user between the wall and their downloads
+export const RESTORE_SUCCESS_COUNT = 3;
 
 export interface FailureEntry {
   at: number;
@@ -25,11 +28,19 @@ interface ConnectivityState {
   failures: FailureEntry[];
   lastRunAt?: number;
   lastSavedDumpPath: string | null;
+  // the user chose to keep listening to downloaded tracks while the server is unreachable:
+  // failures are still recorded for the report, but the wall stays hidden until a retry succeeds.
+  offlineMode: boolean;
+  offlineSuccessStreak: number;
+  // set when offline mode ended because the server answered again
+  restoredAt?: number;
   recordFailure: (entry: Omit<FailureEntry, "at">) => void;
   runDiagnostics: () => Promise<void>;
   retry: () => Promise<void>;
   runAndSaveDump: () => Promise<SaveDumpResult>;
   reset: () => void;
+  enterOfflineMode: () => void;
+  exitOfflineMode: () => void;
 }
 
 export const useConnectivityStore = create<ConnectivityState>((set, get) => ({
@@ -41,6 +52,8 @@ export const useConnectivityStore = create<ConnectivityState>((set, get) => ({
   failures: [],
   lastRunAt: undefined,
   lastSavedDumpPath: null,
+  offlineMode: false,
+  offlineSuccessStreak: 0,
 
   recordFailure: (entry) => {
     if (isPlaybackPath(entry.path)) return;
@@ -48,10 +61,14 @@ export const useConnectivityStore = create<ConnectivityState>((set, get) => ({
     const failures = [...get().failures, { ...entry, at }].slice(-MAX_FAILURES);
     const recent = failures.filter((f) => at - f.at <= TRIP_WINDOW_MS).length;
     if (recent >= TRIP_COUNT) {
+      if (get().offlineMode) {
+        set({ failures, tripped: true, offlineSuccessStreak: 0 });
+        return;
+      }
       set({ failures, tripped: true, visible: true });
       void get().runDiagnostics();
     } else {
-      set({ failures });
+      set({ failures, offlineSuccessStreak: 0 });
     }
   },
 
@@ -62,8 +79,13 @@ export const useConnectivityStore = create<ConnectivityState>((set, get) => ({
       const { checks, main } = await runAllChecks();
       set({ checks, main, lastRunAt: Date.now() });
       const apiOk = checks.some((c) => c.id === "api" && c.status === "ok");
-      if (apiOk && get().tripped) {
-        set({ tripped: false, visible: false, failures: [] });
+      if (apiOk && (get().tripped || get().offlineMode)) {
+        set({
+          tripped: false,
+          visible: false,
+          failures: [],
+          ...(get().offlineMode ? { offlineMode: false, offlineSuccessStreak: 0, restoredAt: Date.now() } : {}),
+        });
       }
     } finally {
       set({ running: false });
@@ -74,7 +96,12 @@ export const useConnectivityStore = create<ConnectivityState>((set, get) => ({
     await get().runDiagnostics();
     const apiOk = get().checks.some((c) => c.id === "api" && c.status === "ok");
     if (apiOk) {
-      set({ tripped: false, visible: false, failures: [] });
+      set({
+        tripped: false,
+        visible: false,
+        failures: [],
+        ...(get().offlineMode ? { offlineMode: false, offlineSuccessStreak: 0, restoredAt: Date.now() } : {}),
+      });
     }
   },
 
@@ -106,7 +133,17 @@ export const useConnectivityStore = create<ConnectivityState>((set, get) => ({
       tripped: false,
       visible: false,
       failures: [],
+      offlineMode: false,
+      offlineSuccessStreak: 0,
     });
+  },
+
+  enterOfflineMode: () => {
+    set({ offlineMode: true, visible: false, offlineSuccessStreak: 0 });
+  },
+
+  exitOfflineMode: () => {
+    set({ offlineMode: false, offlineSuccessStreak: 0 });
   },
 }));
 
@@ -114,6 +151,35 @@ export function recordConnectivityFailure(entry: Omit<FailureEntry, "at">): void
   if (isPlaybackPath(entry.path)) return;
   try {
     useConnectivityStore.getState().recordFailure(entry);
+  } catch {
+  }
+}
+
+export function isOfflineModeActive(): boolean {
+  try {
+    return useConnectivityStore.getState().offlineMode;
+  } catch {
+    return false;
+  }
+}
+
+// successful api answers while offline mode is on mean liner's servers are coming back
+export function recordConnectivitySuccess(): void {
+  try {
+    const state = useConnectivityStore.getState();
+    if (!state.offlineMode) return;
+    const streak = state.offlineSuccessStreak + 1;
+    if (streak < RESTORE_SUCCESS_COUNT) {
+      useConnectivityStore.setState({ offlineSuccessStreak: streak });
+      return;
+    }
+    useConnectivityStore.setState({
+      offlineMode: false,
+      offlineSuccessStreak: 0,
+      restoredAt: Date.now(),
+      tripped: false,
+      failures: [],
+    });
   } catch {
   }
 }

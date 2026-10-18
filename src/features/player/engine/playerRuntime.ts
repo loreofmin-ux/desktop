@@ -1,5 +1,6 @@
 import { usePlayerStore } from "../store/playerStore";
 import { ApiError } from "@/shared/api";
+import { getAuthUserId } from "@/shared/api/auth-session";
 import { log } from "@/shared/utils/logger";
 import { telemetry } from "@/shared/telemetry";
 import { linerDb, audioCache } from "@/shared/storage";
@@ -420,6 +421,7 @@ export class PlayerRuntime {
     const controller = new AbortController();
     this.preloadAbortController = controller;
     this.preloadingTrackId = track.id;
+    const ownerId = getAuthUserId();
 
     const promise = (async () => {
       try {
@@ -428,7 +430,7 @@ export class PlayerRuntime {
 
         const blob = await this.downloadAudioBlob(stream, controller.signal);
         if (!blob || controller.signal.aborted) return;
-        await linerDb.putAudio(track.id, blob, blob.type);
+        await linerDb.putAudio(track.id, blob, blob.type, undefined, ownerId);
         await linerDb.putTrack(track);
         log(
           "green",
@@ -535,6 +537,7 @@ export class PlayerRuntime {
       if (cachedAudio && isValidCachedBlob) {
         this.currentSessionExpiresAt = null;
         void linerDb.putTrack(track);
+        void linerDb.addAudioOwner(track.id, getAuthUserId());
         const blobUrl = URL.createObjectURL(cachedAudio.blob);
         this.activeBlobUrl = blobUrl;
         this.audio.src = blobUrl;
@@ -844,11 +847,13 @@ export class PlayerRuntime {
 
   private cacheAudioInBackground(track: Track, stream: PlaybackStream, signal: AbortSignal) {
     if (track.durationMs && track.durationMs > 20 * 60 * 1000) return;
+    // the account that started playback owns the file, even if it signs out before the download ends
+    const ownerId = getAuthUserId();
     void (async () => {
       try {
         const blob = await this.downloadAudioBlob(stream, signal);
         if (!blob || signal.aborted) return;
-        await linerDb.putAudio(track.id, blob, blob.type);
+        await linerDb.putAudio(track.id, blob, blob.type, undefined, ownerId);
         await linerDb.putTrack(track);
         log("green", "playback", `background cached: ${track.title} (${Math.round(blob.size / 1024)} KB)`);
       } catch {}
