@@ -8,6 +8,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { usePlayerState } from "../hooks/usePlayerState";
 import { playerEngine } from "../engine/playerEngine";
+import { playLyricsReportMoment } from "../engine/playAtPosition";
 import {
   useLyricsStore,
   LyricsProviderIsland,
@@ -24,6 +25,11 @@ import "@braccato/core/styles/lyrics.css";
 import "@braccato/core/styles/instrumental.css";
 import KawarpWrapper from "./KawarpWrapper";
 import { useTranslation } from "@/languages";
+import {
+  useLyricsReportMenu,
+  readAudioPositionMs,
+  braccatoLineIndexFromTarget,
+} from "@/features/lyrics/report";
 
 const BRACCATO_TAG = "braccato-lyrics";
 
@@ -39,6 +45,21 @@ function BraccatoLyricsView({ lyrics }: BraccatoLyricsViewProps) {
   const lastWheelTimeRef = useRef(0);
   const isInFreeSearchRef = useRef(false);
   const waitingForAudioAfterClickRef = useRef(false);
+
+  const positionMsRef = useRef(player.positionMs);
+  positionMsRef.current = player.positionMs;
+  const getReportPositionMs = useCallback(
+    () => readAudioPositionMs(positionMsRef.current),
+    [],
+  );
+  const lyricsReport = useLyricsReportMenu({
+    origin: "fullscreen",
+    track: player.currentTrack ?? null,
+    getPositionMs: getReportPositionMs,
+    onPlayMoment: playLyricsReportMoment,
+  });
+  const openReportMenuRef = useRef(lyricsReport.openMenu);
+  openReportMenuRef.current = lyricsReport.openMenu;
 
   const scrollToActiveLine = useCallback(
     (behavior: ScrollBehavior = "smooth") => {
@@ -171,6 +192,10 @@ function BraccatoLyricsView({ lyrics }: BraccatoLyricsViewProps) {
       handleUserInteractionRef.current();
     };
 
+    const onLineContextMenu = (e: MouseEvent) => {
+      openReportMenuRef.current(e, { lineIndex: braccatoLineIndexFromTarget(e.target) });
+    };
+
     const onLyricsLoaded = () => {
       if (waitingForAudioAfterClickRef.current) return;
       requestAnimationFrame(() => {
@@ -215,6 +240,7 @@ function BraccatoLyricsView({ lyrics }: BraccatoLyricsViewProps) {
 
     el.addEventListener("braccato:lyrics-loaded", onLyricsLoaded);
     el.addEventListener("braccato:line-click", handleBraccatoLineClick);
+    el.addEventListener("contextmenu", onLineContextMenu);
     el.addEventListener("wheel", onUserScroll, { passive: true, capture: true });
     el.addEventListener("touchmove", onUserScroll, { passive: true, capture: true });
 
@@ -223,6 +249,7 @@ function BraccatoLyricsView({ lyrics }: BraccatoLyricsViewProps) {
       useLyricsStore.getState().setActiveLineIndex(null);
       el.removeEventListener("braccato:lyrics-loaded", onLyricsLoaded);
       el.removeEventListener("braccato:line-click", handleBraccatoLineClick);
+      el.removeEventListener("contextmenu", onLineContextMenu);
       el.removeEventListener("wheel", onUserScroll, { capture: true });
       el.removeEventListener("touchmove", onUserScroll, { capture: true });
       if (freeScrollTimerRef.current) {
@@ -282,6 +309,7 @@ function BraccatoLyricsView({ lyrics }: BraccatoLyricsViewProps) {
           scrollbarWidth: "none",
         },
       })}
+      {lyricsReport.element}
     </div>
   );
 }

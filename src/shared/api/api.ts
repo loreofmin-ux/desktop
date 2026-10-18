@@ -530,6 +530,7 @@ import type {
   ApiUserPlaylist,
   ApiUserPlaylistItem,
   LyricsStreamEvent,
+  LyricsReportRequest,
   ImportJob,
   ImportReview,
   ImportReviewDecision,
@@ -883,6 +884,20 @@ export const api = {
     return getLocalImportHandler()
       .finalize(importId, tracks ?? [], title, description)
       .then(({ finalized }) => ({ denied: "all" as const, finalized }));
+  },
+
+  // the backend has no such route yet; see src/features/lyrics/report/lyricsReportTransport.ts
+  submitLyricsReport(
+    trackId: string,
+    report: LyricsReportRequest,
+  ): Promise<{ id?: string }> {
+    return request<{ id?: string }>(
+      `/v1/tracks/${encodeURIComponent(trackId)}/lyrics/reports`,
+      {
+        method: "POST",
+        body: JSON.stringify(report),
+      },
+    );
   },
 
   async *streamLyrics(
