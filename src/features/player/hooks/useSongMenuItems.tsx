@@ -21,6 +21,7 @@ import {
 import { useTranslation } from "@/languages";
 import { showToast } from "@/shared/ui";
 import { buildShareUrl } from "@/shared/utils/share";
+import { isLocalTrackId } from "@/shared/utils/localTrack";
 
 export interface SongMenuContext {
   id?: string;
@@ -68,14 +69,21 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
     }
   }, [id, liked, likeMutation, unlikeMutation]);
 
+  const canShare = !isLocalTrackId(id);
+
   const handleShare = useCallback(() => {
     if (!id) return;
     if (typeof navigator !== "undefined" && navigator.clipboard) {
       const type = (searchType as "track" | "album" | "artist" | "playlist") || "track";
-      void navigator.clipboard.writeText(buildShareUrl(type, id));
-      showToast(t("common.link_copied"), "checkmark", {
-        description: artists ? `${title} — ${artists}` : title,
-      });
+      // only confirm once the link is really in the clipboard
+      navigator.clipboard
+        .writeText(buildShareUrl(type, id))
+        .then(() =>
+          showToast(t("common.link_copied"), "checkmark", {
+            description: artists ? `${title} — ${artists}` : title,
+          }),
+        )
+        .catch(() => {});
     }
   }, [id, searchType, title, artists, t]);
 
@@ -147,12 +155,17 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
             ),
             onClick: handleLike,
           },
-          {
-            id: "share",
-            label: t("common.share"),
-            icon: <ShareForwardLine size={15} />,
-            onClick: handleShare,
-          },
+          // local files have no public link
+          ...(canShare
+            ? [
+                {
+                  id: "share",
+                  label: t("common.share"),
+                  icon: <ShareForwardLine size={15} />,
+                  onClick: handleShare,
+                },
+              ]
+            : []),
           {
             id: "remove-from-playlist",
             label: t("common.remove_from_playlist"),
@@ -253,12 +266,17 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
             });
           },
         },
-        {
-          id: "share",
-          label: t("common.share"),
-          icon: <ShareForwardLine size={15} />,
-          onClick: handleShare,
-        },
+        // local files have no public link
+        ...(canShare
+          ? [
+              {
+                id: "share",
+                label: t("common.share"),
+                icon: <ShareForwardLine size={15} />,
+                onClick: handleShare,
+              },
+            ]
+          : []),
       ];
     }
 
@@ -279,15 +297,21 @@ export function useSongMenuItems(ctx: SongMenuContext): DropdownMenuItem[] {
           });
         },
       },
-      {
-        id: "share",
-        label: t("common.share"),
-        icon: <ShareForwardLine size={15} />,
-        onClick: handleShare,
-      },
+      // local files have no public link
+      ...(canShare
+        ? [
+            {
+              id: "share",
+              label: t("common.share"),
+              icon: <ShareForwardLine size={15} />,
+              onClick: handleShare,
+            },
+          ]
+        : []),
     ];
   }, [
     id,
+    canShare,
     title,
     artists,
     coverUrl,

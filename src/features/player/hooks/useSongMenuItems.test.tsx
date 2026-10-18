@@ -83,7 +83,7 @@ describe("useSongMenuItems", () => {
     return () => result;
   }
 
-  it("includes share item for a standard track and copies track link to clipboard", () => {
+  it("includes share item for a standard track and copies track link to clipboard", async () => {
     const getResult = renderHookHelper({
       id: "track-123",
       title: "Tarde o temprano",
@@ -103,9 +103,29 @@ describe("useSongMenuItems", () => {
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
       "https://link.tryliner.fun/track?id=track-123"
     );
-    expect(showToast).toHaveBeenCalledWith("Link copied", "checkmark", {
-      description: "Tarde o temprano — Nsqk",
+    await vi.waitFor(() =>
+      expect(showToast).toHaveBeenCalledWith("Link copied", "checkmark", {
+        description: "Tarde o temprano — Nsqk",
+      }),
+    );
+  });
+
+  it("shows no toast when the clipboard write fails", async () => {
+    vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(new Error("denied"));
+    const getResult = renderHookHelper({ id: "track-123", title: "Tarde o temprano", artists: "Nsqk", coverUrl: "" });
+
+    act(() => {
+      getResult().find((item) => item.id === "share")?.onClick?.();
     });
+
+    await vi.waitFor(() => expect(navigator.clipboard.writeText).toHaveBeenCalled());
+    await Promise.resolve();
+    expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it("has no share item for a local file", () => {
+    const getResult = renderHookHelper({ id: "local:abc", title: "Demo", artists: "Me", coverUrl: "" });
+    expect(getResult().map((item) => item.id)).not.toContain("share");
   });
 
   it("includes share item when inside a playlist with remove-from-playlist option", () => {
