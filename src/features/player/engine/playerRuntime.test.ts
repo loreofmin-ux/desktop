@@ -294,6 +294,54 @@ describe("PlayerRuntime audio caching", () => {
       Reflect.deleteProperty(audio, "error");
     }
   }, 15_000);
+
+  it("restores the recovery attempt after steady playback so a later transient error recovers again", async () => {
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    const resolveSpy = mocks.resolvePlaybackStream.mockResolvedValue(urlStream);
+    // not a standalone file, so nothing is cached and every load goes to the network
+    vi.spyOn(globalThis, "fetch").mockImplementation(async () => new Response(new Uint8Array(16), { status: 206 }));
+
+    const longTrack: Track = { ...track, id: "long-track", title: "Long" };
+    usePlayerStore.setState({ currentTrack: longTrack, positionMs: 0 });
+
+    const audio = (playerRuntime as any).audio as HTMLAudioElement;
+    let mediaTime = 0;
+    Object.defineProperty(audio, "readyState", { get: () => 4, configurable: true });
+    Object.defineProperty(audio, "currentTime", { get: () => mediaTime, set: () => {}, configurable: true });
+    Object.defineProperty(audio, "error", { value: { code: 2, message: "network error" }, configurable: true });
+    const playFor = (seconds: number) => {
+      audio.dispatchEvent(new Event("playing"));
+      for (let elapsed = 0; elapsed < seconds; elapsed += 0.25) {
+        mediaTime += 0.25;
+        audio.dispatchEvent(new Event("timeupdate"));
+      }
+    };
+
+    try {
+      await playerRuntime!.loadAndPlay(longTrack);
+      expect(resolveSpy).toHaveBeenCalledTimes(1);
+
+      audio.dispatchEvent(new Event("error"));
+      await vi.waitFor(() => expect(resolveSpy).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(usePlayerStore.getState().status).toBe("playing"));
+
+      // steady playback after the recovery: a later error (expired session) recovers again
+      playFor(6);
+      audio.dispatchEvent(new Event("error"));
+      await vi.waitFor(() => expect(resolveSpy).toHaveBeenCalledTimes(3));
+      await vi.waitFor(() => expect(usePlayerStore.getState().status).toBe("playing"));
+
+      // a short playback is not enough, the next error gives up
+      playFor(1);
+      audio.dispatchEvent(new Event("error"));
+      await vi.waitFor(() => expect(usePlayerStore.getState().status).toBe("error"));
+      expect(resolveSpy).toHaveBeenCalledTimes(3);
+    } finally {
+      Reflect.deleteProperty(audio, "readyState");
+      Reflect.deleteProperty(audio, "currentTime");
+      Reflect.deleteProperty(audio, "error");
+    }
+  });
 });
 
 describe("PlayerRuntime cache ownership for the offline downloads list", () => {
