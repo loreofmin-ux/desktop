@@ -42,6 +42,10 @@ import { createShutdown } from "./shutdown.js";
 import { computeDragBounds } from "./window-drag.js";
 import { DiscordRpcManager } from "./discord.js";
 import { PoTokenService } from "./potoken.js";
+import { registerLocalScheme, registerLocalLibrary } from "./local-library.js";
+
+// custom scheme for local music files (must be registered before app is ready)
+registerLocalScheme();
 
 // root error handling for main process
 process.on("uncaughtException", (error) => {
@@ -425,6 +429,8 @@ if (!gotTheLock) {
     ipcMain.handle("window:is-fullscreen", () => {
       return mainWindow?.isFullScreen() ?? false;
     });
+
+    registerLocalLibrary(() => mainWindow);
 
     ipcMain.handle("app:get-version", () => {
       return app.getVersion();

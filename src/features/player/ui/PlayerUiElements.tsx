@@ -17,6 +17,7 @@ import {
 import { usePlayerState } from "../hooks/usePlayerState";
 import { playerEngine } from "../engine/playerEngine";
 import { isRadioContext, nextRepeatMode } from "../engine/radioMode";
+import { isLocalTrackId } from "@/shared/utils/localTrack";
 import { useIsTrackLiked, useLikeTrack, useUnlikeTrack } from "@/features/library/hooks";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArtistLink } from "@/features/artist";
@@ -131,38 +132,40 @@ export function PlayerUiElements({
             )}
           </motion.div>
         </AnimatePresence>
-        {/* like button on the cover corner (no tooltip; aria-label names it) */}
-        <button
-          type="button"
-          aria-label={isLiked ? t("common.unlike") : t("common.like")}
-          className={`absolute bottom-2.5 left-2.5 z-20 inline-flex h-[30px] w-[30px] items-center justify-center rounded-full transition-colors duration-200 ease-out active:scale-[0.92] bg-black/40 backdrop-blur-md border-none hover:bg-black/60 ${
-            isLiked ? "text-white" : "text-white/70 hover:text-white"
-          }`}
-          onClick={handleLikeToggle}
-          style={{ cursor: "pointer" }}
-        >
-          {/* subtle crossfade: outline heart out, filled heart in with a slight scale */}
-          <motion.div
-            initial={false}
-            animate={{ scale: isLiked ? 0.85 : 1, opacity: isLiked ? 0 : 1 }}
-            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute inset-0 flex items-center justify-center"
+        {/* like button on the cover corner (no tooltip; aria-label names it), hidden for local files */}
+        {!isLocalTrackId(track?.id) && (
+          <button
+            type="button"
+            aria-label={isLiked ? t("common.unlike") : t("common.like")}
+            className={`absolute bottom-2.5 left-2.5 z-20 inline-flex h-[30px] w-[30px] items-center justify-center rounded-full transition-colors duration-200 ease-out active:scale-[0.92] bg-black/40 backdrop-blur-md border-none hover:bg-black/60 ${
+              isLiked ? "text-white" : "text-white/70 hover:text-white"
+            }`}
+            onClick={handleLikeToggle}
+            style={{ cursor: "pointer" }}
           >
-            <HeartLine size={16} />
-          </motion.div>
-          <motion.div
-            initial={false}
-            animate={{ scale: isLiked ? 1 : 0.75, opacity: isLiked ? 1 : 0 }}
-            transition={
-              isLiked
-                ? { type: "spring", stiffness: 500, damping: 30, mass: 0.6 }
-                : { duration: 0.16, ease: "easeOut" }
-            }
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <HeartFill size={16} />
-          </motion.div>
-        </button>
+            {/* subtle crossfade: outline heart out, filled heart in with a slight scale */}
+            <motion.div
+              initial={false}
+              animate={{ scale: isLiked ? 0.85 : 1, opacity: isLiked ? 0 : 1 }}
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <HeartLine size={16} />
+            </motion.div>
+            <motion.div
+              initial={false}
+              animate={{ scale: isLiked ? 1 : 0.75, opacity: isLiked ? 1 : 0 }}
+              transition={
+                isLiked
+                  ? { type: "spring", stiffness: 500, damping: 30, mass: 0.6 }
+                  : { duration: 0.16, ease: "easeOut" }
+              }
+              className="absolute inset-0 flex items-center justify-center"
+            >
+              <HeartFill size={16} />
+            </motion.div>
+          </button>
+        )}
       </div>
 
       {/* Track info */}

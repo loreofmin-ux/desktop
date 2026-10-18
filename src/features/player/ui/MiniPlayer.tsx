@@ -31,6 +31,7 @@ import { isRadioContext, nextRepeatMode } from "../engine/radioMode";
 import Button from "@/shared/ui/Button";
 import SongCard from "./SongCard";
 import { useTranslation } from "@/languages";
+import { isLocalTrackId } from "@/shared/utils/localTrack";
 import { useIsTrackLiked, useLikeTrack, useUnlikeTrack } from "@/features/library/hooks";
 import { usePlayerStore } from "../store/playerStore";
 import { toVolumeGain, toVolumeLevel } from "../engine/volume";
@@ -790,18 +791,20 @@ function MiniPlayer({
                 />
               </p>
             </div>
-            <button
-              type="button"
-              aria-label={isLiked ? "Unlike" : "Like"}
-              className={`${iconButtonClass} shrink-0 transition-colors duration-150 pointer-events-auto prevent-seek ${
-                isLiked ? "text-accent-primary" : "text-text-secondary hover:text-text-primary"
-              }`}
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={handleLikeToggle}
-              style={{ cursor: "pointer" }}
-            >
-              {isLiked ? <HeartFill size={20} /> : <HeartLine size={20} />}
-            </button>
+            {!isLocalTrackId(player.currentTrack?.id) && (
+              <button
+                type="button"
+                aria-label={isLiked ? "Unlike" : "Like"}
+                className={`${iconButtonClass} shrink-0 transition-colors duration-150 pointer-events-auto prevent-seek ${
+                  isLiked ? "text-accent-primary" : "text-text-secondary hover:text-text-primary"
+                }`}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={handleLikeToggle}
+                style={{ cursor: "pointer" }}
+              >
+                {isLiked ? <HeartFill size={20} /> : <HeartLine size={20} />}
+              </button>
+            )}
           </div>
 
           <div
