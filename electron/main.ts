@@ -37,8 +37,9 @@ import { createSleepBlocker } from "./sleep-blocker.js";
 import { DiscordPresence } from "./discord-presence.js";
 import type { TouchBarStatePayload } from "./touchbar.js";
 
-// application id from discord.com/developers/applications (public, not a secret); empty = presence off
-const DISCORD_CLIENT_ID = process.env.LINER_DISCORD_CLIENT_ID || "";
+// application id from discord.com/developers/applications (public, not a secret)
+// shortcut: falls back to loreofmin-ux's "Liner" application until the maintainers create an official one
+const DISCORD_CLIENT_ID = process.env.LINER_DISCORD_CLIENT_ID || "1560423149206511668";
 
 // root error handling for main process
 process.on("uncaughtException", (error) => {
