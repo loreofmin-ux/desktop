@@ -354,6 +354,50 @@ describe("Player auto-skip on playback error", () => {
     });
   });
 
+  describe("removeFromQueue", () => {
+    it("removes upcoming and past tracks and keeps the playing one in place", async () => {
+      const tracks = ["1", "2", "3", "4"].map((id) => mockTrack(id, `Track ${id}`));
+      await playerEngine.playTrack(tracks[2], tracks, null, null, 2);
+
+      playerEngine.removeFromQueue(3);
+      expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(["1", "2", "3"]);
+      expect(usePlayerStore.getState().currentIndex).toBe(2);
+
+      playerEngine.removeFromQueue(0);
+      expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(["2", "3"]);
+      expect(usePlayerStore.getState().currentIndex).toBe(1);
+      expect(usePlayerStore.getState().currentTrack?.id).toBe("3");
+    });
+
+    it("ignores the playing track and invalid indices", async () => {
+      const tracks = [mockTrack("1", "Track 1"), mockTrack("2", "Track 2")];
+      await playerEngine.playTrack(tracks[0], tracks);
+
+      playerEngine.removeFromQueue(0);
+      playerEngine.removeFromQueue(-1);
+      playerEngine.removeFromQueue(5);
+
+      expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(["1", "2"]);
+      expect(usePlayerStore.getState().currentIndex).toBe(0);
+    });
+
+    it("undo puts a removed track back in place, before or after the playing one", async () => {
+      const tracks = ["1", "2", "3", "4"].map((id) => mockTrack(id, `Track ${id}`));
+      await playerEngine.playTrack(tracks[2], tracks, null, null, 2);
+
+      playerEngine.removeFromQueue(0);
+      playerEngine.insertIntoQueue(0, tracks[0]);
+      expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(["1", "2", "3", "4"]);
+      expect(usePlayerStore.getState().currentIndex).toBe(2);
+      expect(usePlayerStore.getState().currentTrack?.id).toBe("3");
+
+      playerEngine.removeFromQueue(3);
+      playerEngine.insertIntoQueue(3, tracks[3]);
+      expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual(["1", "2", "3", "4"]);
+      expect(usePlayerStore.getState().currentIndex).toBe(2);
+    });
+  });
+
   describe("Queue Preload Behavior", () => {
     it("preloads strictly only 1 next track in queue without spamming upcoming tracks", async () => {
       if (!playerRuntime) return;
