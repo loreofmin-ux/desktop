@@ -1016,16 +1016,22 @@ class PlayerEngine {
   }
 
   // the playing track is not removable from here: skip it instead
-  public removeFromQueue(index: number): void {
+  // returns the undo, or null when nothing was removed
+  public removeFromQueue(index: number): (() => void) | null {
     const store = usePlayerStore.getState();
-    if (index < 0 || index >= store.queue.length || index === store.currentIndex) return;
+    if (index < 0 || index >= store.queue.length || index === store.currentIndex) return null;
 
+    const track = store.queue[index];
     const queue = store.queue.filter((_, i) => i !== index);
     store.setQueue(queue);
     if (index < store.currentIndex) {
       store.setCurrentTrack(store.currentTrack, store.currentIndex - 1);
     }
     this.preloadNextTrack(usePlayerStore.getState());
+    // undo only applies to the queue it was made on, not to a queue started or edited since
+    return () => {
+      if (usePlayerStore.getState().queue === queue) this.insertIntoQueue(index, track);
+    };
   }
 
   // undo for removeFromQueue: puts the track back at the position it had
