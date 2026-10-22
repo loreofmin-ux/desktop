@@ -58,14 +58,14 @@ const QueueList = memo(function QueueList({
       window.setTimeout(() => {
         const track = usePlayerStore.getState().queue[index];
         // the queue may have changed during the animation: only remove that same track
-        if (track?.id === id) {
-          playerEngine.removeFromQueue(index);
+        const undo = track?.id === id ? playerEngine.removeFromQueue(index) : null;
+        if (track && undo) {
           showToast(t("common.removed_from_queue"), "checkmark", {
             description: track.artists ? `${track.title} — ${track.artists}` : track.title,
             action: {
               label: t("common.undo"),
               icon: <Back2Line size={14} />,
-              onClick: () => playerEngine.insertIntoQueue(index, track),
+              onClick: undo,
             },
           });
         }
@@ -169,7 +169,7 @@ const QueueList = memo(function QueueList({
               }
               showReorderHandle
               onRemoveFromQueue={
-                isCurrent || removingIndex !== null
+                index <= currentIndex || removingIndex !== null
                   ? undefined
                   : () => handleRemove(index, item.id)
               }
