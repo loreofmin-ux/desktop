@@ -102,9 +102,10 @@ async function loadPlayer(playerId: string): Promise<LoadedPlayer> {
   const body = wrapperBody(parseScript(source, { ranges: true }));
   const factory = findUrlFactory(body.body);
   if (!factory) throw new Error("YouTube TV player url factory not found");
-  const exportName = `__linerUrlFactory_${playerId.replace(/\W/g, "_")}`;
+  // raw id as a quoted key: replacing \W would give a-b and a_b the same global
+  const exportName = `__linerUrlFactory_${playerId}`;
   const end = (body.range?.[1] ?? source.length) - 1;
-  const instrumented = `${source.slice(0, end)};globalThis.${exportName}=${factory.name};${source.slice(end)}`;
+  const instrumented = `${source.slice(0, end)};globalThis[${JSON.stringify(exportName)}]=${factory.name};${source.slice(end)}`;
   const player = { signatureTimestamp, factory, exportName };
   inMainWorld(player, [], instrumented);
   return player;

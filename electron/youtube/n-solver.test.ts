@@ -29,8 +29,8 @@ const player = `var _yt_player={};(function(g){var w='${table}'.split('}');
   Pk(10,13,"https://example.com");var cfg={signatureTimestamp:20385};
 })(_yt_player);`;
 
-function stubFetch() {
-  const fetch = vi.fn(async () => ({ ok: true, text: async () => player }));
+function stubFetch(source = player) {
+  const fetch = vi.fn(async () => ({ ok: true, text: async () => source }));
   vi.stubGlobal("fetch", fetch);
   return fetch;
 }
@@ -63,5 +63,17 @@ describe("solveN", () => {
     await expect(solveN("test-2", ["aba"])).rejects.toThrow(
       "YouTube TV player returned an invalid n value",
     );
+  });
+
+  it("keeps players apart when their ids differ only by - and _", async () => {
+    stubFetch();
+    await solveN("test-3", []);
+    stubFetch(player.replace(".reverse()", ".reverse().concat('_')"));
+    await expect(solveN("test_3", ["abc"])).resolves.toMatchObject({
+      values: ["cba_"],
+    });
+    await expect(solveN("test-3", ["abc"])).resolves.toMatchObject({
+      values: ["cba"],
+    });
   });
 });
