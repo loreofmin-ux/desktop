@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { KawarpEngine } from "../engine/kawarpEngine";
 import { getCoverElement, useCoverElement } from "@/features/covers";
+import { useCustomizationStore } from "@/features/settings/store/customizationStore";
 
 export const KAWARP_RESIZE_SETTLE_MS = 300;
 export const KAWARP_RENDER_SCALE = 0.5;
@@ -17,6 +18,7 @@ export function KawarpWrapper({ src, onLoad, onError }: KawarpWrapperProps) {
   const engineRef = useRef<KawarpEngine | null>(null);
   const [loaded, setLoaded] = useState(false);
   const coverElement = useCoverElement(src);
+  const maxFps = useCustomizationStore((s) => s.backgroundFps);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,6 +34,7 @@ export function KawarpWrapper({ src, onLoad, onError }: KawarpWrapperProps) {
         saturation: 1.3,
         scale: 1.18,
         dithering: 0.008,
+        maxFps: useCustomizationStore.getState().backgroundFps,
       });
       engineRef.current = engine;
       engine.start();
@@ -45,6 +48,10 @@ export function KawarpWrapper({ src, onLoad, onError }: KawarpWrapperProps) {
       engineRef.current = null;
     };
   }, [onError]);
+
+  useEffect(() => {
+    engineRef.current?.setMaxFps(maxFps);
+  }, [maxFps]);
 
   useEffect(() => {
     const container = containerRef.current;

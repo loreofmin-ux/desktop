@@ -777,6 +777,13 @@
       "title": "Kapak parıltısı",
       "description": "Sayfaların arkasında bulanık kapak parıltısı. Düz arka plan için kapatın.",
       "disabled_for_light": "Açık temada kapalı."
+    },
+    "background_fps": {
+      "title": "Tam ekran arka plan kare hızı",
+      "description": "Tam ekran oynatıcının arkasındaki hareketli kapağın akıcılığı. Yüksek değerler daha fazla GPU ve pil kullanır.",
+      "option_30": "30 fps",
+      "option_60": "60 fps",
+      "option_screen": "Ekran yenileme hızı"
     }
   },
   "toast": {

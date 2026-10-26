@@ -722,6 +722,13 @@
       "title": "Cover-Leuchten",
       "description": "Unscharfes Cover-Leuchten hinter Seiten. Ausschalten für einen schlichten Hintergrund.",
       "disabled_for_light": "Im hellen Design aus."
+    },
+    "background_fps": {
+      "title": "Bildrate des Vollbild-Hintergrunds",
+      "description": "Flüssigkeit des animierten Covers hinter dem Vollbild-Player. Höhere Werte brauchen mehr GPU und Akku.",
+      "option_30": "30 fps",
+      "option_60": "60 fps",
+      "option_screen": "Bildwiederholrate des Bildschirms"
     }
   },
   "toast": {

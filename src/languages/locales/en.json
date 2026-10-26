@@ -857,6 +857,13 @@
       "title": "Cover glow",
       "description": "Blurred artwork glow behind pages. Turn off to keep a plain background.",
       "disabled_for_light": "Off in light theme."
+    },
+    "background_fps": {
+      "title": "Fullscreen background frame rate",
+      "description": "Smoother animated cover behind the fullscreen player. Higher values use more GPU and battery.",
+      "option_30": "30 fps",
+      "option_60": "60 fps",
+      "option_screen": "Screen refresh rate"
     }
   },
   "toast": {

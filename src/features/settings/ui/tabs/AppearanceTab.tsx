@@ -15,6 +15,8 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
   const isDarkTheme = useIsDarkTheme();
   const glowLocked = !isDarkTheme;
   const setCoverGlow = useCustomizationStore((s) => s.setCoverGlow);
+  const backgroundFps = useCustomizationStore((s) => s.backgroundFps);
+  const setBackgroundFps = useCustomizationStore((s) => s.setBackgroundFps);
 
   useEffect(() => {
     setMounted(true);
@@ -95,6 +97,27 @@ export function AppearanceTab({ searchQuery }: { searchQuery?: string }) {
             onChange={setCoverGlow}
             disabled={glowLocked}
             ariaLabel={t("settings.cover_glow.title") || "Cover glow"}
+          />
+        }
+      />
+
+      <SettingRow
+        title={t("settings.background_fps.title")}
+        description={t("settings.background_fps.description")}
+        titleKey="settings.background_fps.title"
+        descKey="settings.background_fps.description"
+        searchQuery={searchQuery}
+        control={
+          <MenuSelect
+            options={[
+              { value: "30", label: t("settings.background_fps.option_30") },
+              { value: "60", label: t("settings.background_fps.option_60") },
+              { value: "0", label: t("settings.background_fps.option_screen") },
+            ]}
+            value={String(backgroundFps)}
+            onChange={(value) => setBackgroundFps(Number(value))}
+            className="min-w-[130px]"
+            aria-label={t("settings.background_fps.title")}
           />
         }
       />

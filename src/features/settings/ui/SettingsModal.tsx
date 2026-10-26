@@ -229,6 +229,11 @@ const SETTING_ITEMS: { tabId: TabId; titleKey: string; descKey?: string }[] = [
     titleKey: "settings.cover_glow.title",
     descKey: "settings.cover_glow.description",
   },
+  {
+    tabId: "Appearance",
+    titleKey: "settings.background_fps.title",
+    descKey: "settings.background_fps.description",
+  },
 
   // Storage
   {

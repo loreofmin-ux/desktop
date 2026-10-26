@@ -8,7 +8,7 @@ const BLUR_SIZE = 160;
 // the cover is blurred to 160px anyway: warping it at full screen size only costs GPU
 const WARP_SCALE = 0.25;
 // slow drifting background, 30 fps looks the same as the monitor refresh rate (up to 165 Hz)
-const FRAME_MS = 1000 / 30;
+const DEFAULT_MAX_FPS = 30;
 
 const VERTEX_SHADER = `
   attribute vec2 a_position;
@@ -180,6 +180,8 @@ export interface KawarpOptions {
   tintIntensity?: number;
   dithering?: number;
   scale?: number;
+  /** frames drawn per second at most, 0 = every screen refresh */
+  maxFps?: number;
 }
 
 export class KawarpEngine {
@@ -211,6 +213,7 @@ export class KawarpEngine {
     },
   );
   private lastFrameTime = 0;
+  private frameMs = 1000 / DEFAULT_MAX_FPS;
   private accumulatedTime = 0;
   private isPlaying = false;
 
@@ -259,6 +262,7 @@ export class KawarpEngine {
       this.tintIntensity = options.tintIntensity;
     if (options.dithering !== undefined) this.dithering = options.dithering;
     if (options.scale !== undefined) this.scale = options.scale;
+    if (options.maxFps !== undefined) this.setMaxFps(options.maxFps);
 
     this.blurProgram = this.createProgram(VERTEX_SHADER, KAWASE_BLUR_SHADER);
     this.blendProgram = this.createProgram(VERTEX_SHADER, BLEND_SHADER);
@@ -331,6 +335,10 @@ export class KawarpEngine {
       this.deleteFramebuffer(this.warpFBO);
       this.warpFBO = this.createFramebuffer(width, height);
     }
+  }
+
+  public setMaxFps(fps: number) {
+    this.frameMs = fps > 0 ? 1000 / fps : 0;
   }
 
   public resize() {
@@ -568,7 +576,8 @@ export class KawarpEngine {
     }
     this.animationId = requestAnimationFrame(this.renderLoop);
     // 2 ms slack so a 60 Hz screen still draws every other frame
-    if (timestamp - this.lastFrameTime < FRAME_MS - 2) return;
+    if (this.frameMs > 0 && timestamp - this.lastFrameTime < this.frameMs - 2)
+      return;
     const dt = (timestamp - this.lastFrameTime) / 1000;
     this.lastFrameTime = timestamp;
     this.accumulatedTime += dt * this.animationSpeed;

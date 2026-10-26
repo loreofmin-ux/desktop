@@ -831,6 +831,13 @@
       "title": "Brillo de portada",
       "description": "Brillo difuminado de la portada tras las páginas. Desactívalo para un fondo liso.",
       "disabled_for_light": "Desactivado en el tema claro."
+    },
+    "background_fps": {
+      "title": "Fotogramas del fondo en pantalla completa",
+      "description": "Fluidez de la portada animada detrás del reproductor a pantalla completa. Los valores altos usan más GPU y batería.",
+      "option_30": "30 fps",
+      "option_60": "60 fps",
+      "option_screen": "Frecuencia de la pantalla"
     }
   },
   "toast": {

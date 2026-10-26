@@ -779,6 +779,13 @@
       "title": "Halo de pochette",
       "description": "Halo flouté de la pochette derrière les pages. Désactivez pour un fond uni.",
       "disabled_for_light": "Désactivé en thème clair."
+    },
+    "background_fps": {
+      "title": "Images/s du fond en plein écran",
+      "description": "Fluidité de la pochette animée derrière le lecteur plein écran. Plus c'est élevé, plus la carte graphique et la batterie sont sollicitées.",
+      "option_30": "30 images/s",
+      "option_60": "60 images/s",
+      "option_screen": "Fréquence de l'écran"
     }
   },
   "toast": {

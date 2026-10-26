@@ -781,6 +781,13 @@
       "title": "Poświata okładki",
       "description": "Rozmyta poświata okładki za stronami. Wyłącz, aby zostawić jednolite tło.",
       "disabled_for_light": "Wyłączone w jasnym motywie."
+    },
+    "background_fps": {
+      "title": "Liczba klatek tła pełnoekranowego",
+      "description": "Płynność animowanej okładki za odtwarzaczem pełnoekranowym. Wyższe wartości zużywają więcej GPU i baterii.",
+      "option_30": "30 kl./s",
+      "option_60": "60 kl./s",
+      "option_screen": "Częstotliwość ekranu"
     }
   },
   "toast": {

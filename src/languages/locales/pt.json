@@ -840,6 +840,13 @@
       "title": "Brilho da capa",
       "description": "Brilho desfocado da capa atrás das páginas. Desative para um fundo simples.",
       "disabled_for_light": "Desativado no tema claro."
+    },
+    "background_fps": {
+      "title": "Taxa de quadros do fundo em tela cheia",
+      "description": "Fluidez da capa animada atrás do player em tela cheia. Valores maiores usam mais GPU e bateria.",
+      "option_30": "30 fps",
+      "option_60": "60 fps",
+      "option_screen": "Taxa de atualização da tela"
     }
   },
   "toast": {

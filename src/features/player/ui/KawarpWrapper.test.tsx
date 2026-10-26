@@ -3,7 +3,13 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const engine = vi.hoisted(() => ({ resize: vi.fn(), start: vi.fn(), dispose: vi.fn(), loadImage: vi.fn(async () => {}) }));
+const engine = vi.hoisted(() => ({
+  resize: vi.fn(),
+  start: vi.fn(),
+  dispose: vi.fn(),
+  loadImage: vi.fn(async () => {}),
+  setMaxFps: vi.fn(),
+}));
 
 vi.mock("../engine/kawarpEngine", () => ({
   KawarpEngine: vi.fn(function KawarpEngine() {
@@ -13,6 +19,7 @@ vi.mock("../engine/kawarpEngine", () => ({
 vi.mock("@/features/covers", () => ({ getCoverElement: () => undefined, useCoverElement: () => undefined }));
 
 import { KAWARP_RENDER_SCALE, KAWARP_RESIZE_SETTLE_MS, KawarpWrapper } from "./KawarpWrapper";
+import { useCustomizationStore } from "@/features/settings/store/customizationStore";
 
 describe("KawarpWrapper", () => {
   let container: HTMLDivElement;
@@ -57,6 +64,13 @@ describe("KawarpWrapper", () => {
     expect([canvas.style.width, canvas.style.height]).toEqual(["1920px", "1080px"]);
     expect(canvas.className).toContain("-translate-x-1/2");
     expect(canvas.className).not.toContain("w-full");
+  });
+
+  it("applies the frame rate setting to the running engine", () => {
+    act(() => root.render(<KawarpWrapper />));
+    act(() => useCustomizationStore.getState().setBackgroundFps(60));
+    expect(engine.setMaxFps).toHaveBeenLastCalledWith(60);
+    act(() => useCustomizationStore.getState().setBackgroundFps(30));
   });
 
   it("does nothing while the window maximizes and restores", () => {
