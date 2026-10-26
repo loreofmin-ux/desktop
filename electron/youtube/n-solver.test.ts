@@ -1,18 +1,23 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { solveN } from "./n-solver";
 
-vi.mock("electron", () => ({
-  contextBridge: {
-    // rebuilds the function from its source, like the hop into the main world
-    executeInMainWorld: ({
-      func,
-      args,
-    }: {
-      func: () => unknown;
-      args: unknown[];
-    }) => new Function(`return ${func}`)()(...args),
-  },
-}));
+vi.mock("electron", async () => {
+  const { createContext, runInContext } = await import("node:vm");
+  // another realm stands in for the page's main world
+  const mainWorld = createContext({ URL });
+  return {
+    contextBridge: {
+      // rebuilds the function from its source, like the hop into the main world
+      executeInMainWorld: ({
+        func,
+        args,
+      }: {
+        func: () => unknown;
+        args: unknown[];
+      }) => runInContext(`(${func})`, mainWorld)(...args),
+    },
+  };
+});
 
 const table = ["set", "get", "alr", "yes", "n", "other"].join("}");
 const player = `var _yt_player={};(function(g){var w='${table}'.split('}');
@@ -33,8 +38,6 @@ function stubFetch() {
 describe("solveN", () => {
   afterAll(() => {
     vi.unstubAllGlobals();
-    Reflect.deleteProperty(globalThis, "__linerUrlFactory_test_1");
-    Reflect.deleteProperty(globalThis, "__linerUrlFactory_test_2");
   });
 
   it("runs the player in the main world and caches it per player id", async () => {
@@ -48,6 +51,11 @@ describe("solveN", () => {
       values: ["renil"],
     });
     expect(fetch).toHaveBeenCalledTimes(1);
+    expect(
+      Object.keys(globalThis).filter((key) =>
+        key.startsWith("__linerUrlFactory_"),
+      ),
+    ).toEqual([]);
   });
 
   it("rejects n values the player left unchanged", async () => {
