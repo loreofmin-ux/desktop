@@ -31,7 +31,7 @@ What changed in each release of Liner. Newest first.
 ### Security
 
 - Web security (same-origin policy) is back on in the main window.
-- API request signing is removed; cover and monitor requests are still signed.
+- API request signing remains enabled for general API requests.
 
 ### Translations
 
