@@ -4,8 +4,9 @@ import { registerYoutubeWorkerIpc } from "./worker-ipc.js";
 const BOTGUARD_PAGE = "https://www.youtube.com/robots.txt";
 const START_TIMEOUT_MS = 20_000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
-// the hidden window costs ~200 MB of RAM: close it when no stream needed it for a while, request() reopens it
-const IDLE_CLOSE_MS = 3 * 60_000;
+// the hidden window costs ~200 MB of RAM: close it when no stream needed it for a while, request() reopens it.
+// the next track is prepared as soon as one starts, so 10 min keeps it open through long tracks
+const IDLE_CLOSE_MS = 10 * 60_000;
 const INTERPRETER_HOSTS = new Set(["www.google.com", "www.gstatic.com"]);
 
 export type WorkerMethod = "mint" | "tv-session" | "solve-n";

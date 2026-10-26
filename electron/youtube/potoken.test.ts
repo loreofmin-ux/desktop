@@ -11,6 +11,8 @@ vi.mock("electron", () => {
     private closed: (() => void) | null = null;
     webContents = {
       once: () => {},
+      on: () => {},
+      setWindowOpenHandler: () => {},
       setAudioMuted: () => {},
       // the botguard page answers each mint right away
       send: (_channel: string, { id }: { id: number }) => {
@@ -64,18 +66,18 @@ describe("PoTokenService idle close", () => {
   });
   afterEach(() => vi.useRealTimers());
 
-  it("closes the hidden window after 3 idle minutes and reopens it on the next mint", async () => {
+  it("closes the hidden window after 10 idle minutes and reopens it on the next mint", async () => {
     const service = new PoTokenService("preload.cjs");
 
     await expect(service.mint("video1")).resolves.toBe("tok1");
-    await vi.advanceTimersByTimeAsync(2 * 60_000);
+    await vi.advanceTimersByTimeAsync(8 * 60_000);
     await expect(service.mint("video2")).resolves.toBe("tok2");
     // the second mint pushed the deadline back
-    await vi.advanceTimersByTimeAsync(2 * 60_000);
+    await vi.advanceTimersByTimeAsync(8 * 60_000);
     expect(mocks.windows).toHaveLength(1);
     expect(mocks.windows[0].destroyed).toBe(false);
 
-    await vi.advanceTimersByTimeAsync(60_000);
+    await vi.advanceTimersByTimeAsync(2 * 60_000);
     expect(mocks.windows[0].destroyed).toBe(true);
 
     await expect(service.mint("video3")).resolves.toBe("tok3");
