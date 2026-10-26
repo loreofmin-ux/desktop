@@ -1073,7 +1073,16 @@ class PlayerEngine {
     if (index < store.currentIndex) {
       store.setCurrentTrack(store.currentTrack, store.currentIndex - 1);
     }
-    this.preloadNextTrack(usePlayerStore.getState());
+    const after = usePlayerStore.getState();
+    this.preloadNextTrack(after);
+    // removing the last upcoming track makes the playing one the last: refill like skipNext does
+    if (after.currentTrack)
+      this.maybeExtendQueue(
+        this.sessionId,
+        after.currentTrack.id,
+        after.currentIndex,
+        after.queue.length,
+      );
     // undo only applies to the queue it was made on, not to a queue started or edited since
     return () => {
       if (usePlayerStore.getState().queue === queue)

@@ -88,6 +88,24 @@ describe("radio playback", () => {
     expect(state.currentIndex).toBe(1);
   });
 
+  it("removing the last upcoming track fetches similar tracks when autoplay-similar is on", async () => {
+    usePlayerStore.setState({ autoplaySimilar: true });
+    const tracks = [mk("1"), mk("2")];
+    await playerEngine.playTrack(tracks[0], tracks, "playlist:p");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(getRadio).not.toHaveBeenCalled();
+
+    getRadio.mockResolvedValueOnce(radioItems(["s1", "s2"]));
+    playerEngine.removeFromQueue(1);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(getRadio).toHaveBeenCalledTimes(1);
+    expect(usePlayerStore.getState().queue.map((t) => t.id)).toEqual([
+      "1",
+      "s1",
+      "s2",
+    ]);
+  });
+
   it("plain playlists still loop with repeat-all", async () => {
     const tracks = [mk("1"), mk("2")];
     await playerEngine.playTrack(tracks[0], tracks, "playlist:p");
