@@ -61,42 +61,58 @@ function load(): YoutubeAuthTokens | null {
   } catch (err) {
     console.error("[YouTube] reading the stored session failed:", err);
   }
-  // older builds kept the tokens in plain localStorage: move them to main once
+  // older builds kept the tokens in plain localStorage: move them to main once.
+  // the plain copy is only dropped once main has them on disk; otherwise the next launch retries
   const legacy = readLocal();
   if (legacy) {
-    dropLocal();
-    if (!stored && legacy.refreshToken) {
-      void bridge
-        .set(legacy)
-        .catch((err) =>
-          console.error("[YouTube] saving the session failed:", err),
-        );
+    if (stored || !legacy.refreshToken) {
+      dropLocal();
+    } else {
       stored = legacy;
+      void persistInMain(bridge, legacy).then((saved) => {
+        if (saved) dropLocal();
+      });
     }
   }
   return stored;
 }
 
-function save(next: YoutubeAuthTokens | null): void {
+function persistInMain(
+  bridge: MainYoutubeAuthBridge,
+  next: YoutubeAuthTokens | null,
+): Promise<boolean> {
+  return bridge.set(next).then(
+    (saved) => {
+      if (!saved) console.error("[YouTube] saving the session failed");
+      return saved;
+    },
+    (err) => {
+      console.error("[YouTube] saving the session failed:", err);
+      return false;
+    },
+  );
+}
+
+/** resolves whether the change was stored for the next launch */
+function save(next: YoutubeAuthTokens | null): Promise<boolean> {
   session = next;
   const bridge = mainBridge();
+  let saved: Promise<boolean>;
   if (bridge) {
     dropLocal();
-    void bridge
-      .set(next)
-      .catch((err) =>
-        console.error("[YouTube] saving the session failed:", err),
-      );
+    saved = persistInMain(bridge, next);
   } else {
     try {
       if (next)
         globalThis.localStorage?.setItem(STORAGE_KEY, JSON.stringify(next));
       else globalThis.localStorage?.removeItem(STORAGE_KEY);
     } catch {
-      return;
+      return Promise.resolve(false);
     }
+    saved = Promise.resolve(true);
   }
   notifyChanged();
+  return saved;
 }
 
 function storePageId(next: string | null): void {
@@ -159,7 +175,12 @@ export async function completeYoutubeTvSignIn(
     signal,
   );
   storePageId(null);
-  save(tokens);
+  // a sign-in that can't be stored would silently sign out on the next launch: say so now
+  if (!(await save(tokens))) {
+    session = null;
+    notifyChanged();
+    throw new Error("Couldn't save the YouTube session on this device.");
+  }
   return tokens;
 }
 
@@ -173,14 +194,14 @@ async function refresh(
       current.refreshToken,
       signal,
     );
-    save(next);
+    void save(next);
     return next;
   } catch (error) {
     if (
       error instanceof YoutubeAuthError &&
       TERMINAL_REFRESH_ERRORS.has(error.code)
     )
-      save(null);
+      void save(null);
     throw error;
   }
 }
@@ -202,7 +223,7 @@ export async function getYoutubeAuthorization(
 export async function signOutYoutube(): Promise<void> {
   const current = getYoutubeAuthTokens();
   storePageId(null);
-  save(null);
+  void save(null);
   if (!current) return;
   await fetch(
     `${REVOKE_URL}?token=${encodeURIComponent(current.refreshToken)}`,

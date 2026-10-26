@@ -105,9 +105,10 @@ export interface LinerElectronApi {
   };
   youtubeAuthSession?: {
     get: () => StoredAuthSession | null;
+    /** resolves true once the tokens are on disk */
     set: (
       next: { accessToken: string; refreshToken: string } | null,
-    ) => Promise<StoredAuthSession | null>;
+    ) => Promise<boolean>;
   };
   onDeeplink: (cb: (target: DeeplinkTarget) => void) => () => void;
   diagnoseNetwork: (hosts: string[]) => Promise<MainNetResult>;
