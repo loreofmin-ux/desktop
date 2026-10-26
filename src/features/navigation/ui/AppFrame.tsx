@@ -61,6 +61,9 @@ import {
   SettingsModal,
   useHasPageBackdrop,
   useClassicSurfaces,
+  useHasWallpaper,
+  useCustomizationStore,
+  getBlockStyle,
 } from "@/features/settings";
 import { UpdateModal, UpdateToastBridge } from "@/features/updater";
 import { YoutubeSignInNotice } from "@/features/youtube-auth";
@@ -672,6 +675,15 @@ export default function AppFrame({ children }: AppFrameProps) {
           window.matchMedia?.("(prefers-color-scheme: dark)")?.matches));
   const hasPageBackdrop = useHasPageBackdrop();
   const classicSurfaces = useClassicSurfaces();
+  const hasWallpaper = useHasWallpaper();
+  const backgroundImage = useCustomizationStore((s) => s.backgroundImage);
+  const backgroundBlur = useCustomizationStore((s) => s.backgroundBlur);
+  const backgroundDim = useCustomizationStore((s) => s.backgroundDim);
+  const contentViewConfig = useCustomizationStore((s) => s.contentView);
+  const contentViewStyle = useMemo(
+    () => getBlockStyle(contentViewConfig, isDark, hasWallpaper),
+    [contentViewConfig, isDark, hasWallpaper],
+  );
 
   return (
     <div
@@ -686,8 +698,32 @@ export default function AppFrame({ children }: AppFrameProps) {
         if (e.currentTarget.scrollTop !== 0) e.currentTarget.scrollTop = 0;
       }}
     >
-      {classicSurfaces ? (
-        isDark ? <AmbientTopGlow /> : null
+      {hasWallpaper && backgroundImage ? (
+        <div
+          className="absolute inset-0 z-0 pointer-events-none overflow-hidden"
+          aria-hidden="true"
+        >
+          <img
+            src={backgroundImage}
+            alt=""
+            className="w-full h-full object-cover select-none"
+            style={{
+              filter:
+                backgroundBlur > 0 ? `blur(${backgroundBlur}px)` : undefined,
+              transform: backgroundBlur > 0 ? "scale(1.05)" : undefined,
+            }}
+          />
+          {backgroundDim > 0 && (
+            <div
+              className="absolute inset-0 bg-black"
+              style={{ opacity: backgroundDim / 100 }}
+            />
+          )}
+        </div>
+      ) : classicSurfaces ? (
+        isDark ? (
+          <AmbientTopGlow />
+        ) : null
       ) : (
         <DynamicBlurBackground isDark={isDark} />
       )}
@@ -723,6 +759,7 @@ export default function AppFrame({ children }: AppFrameProps) {
 
         <div className="flex-1 flex flex-col min-w-0 h-full relative gap-1.5 overflow-hidden">
           <main
+            style={contentViewStyle}
             className={cn(
               "flex-1 min-w-0 flex flex-col relative h-full overflow-hidden [--page-inset-top:56px]",
               "rounded-xl",

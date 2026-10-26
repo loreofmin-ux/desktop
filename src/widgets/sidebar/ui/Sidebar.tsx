@@ -2,6 +2,12 @@ import { memo } from "react";
 import { SidebarNavItems } from "./SidebarNavItems";
 import { SidebarSettingsButton } from "./SidebarSettingsButton";
 import { cn } from "@/shared/lib";
+import {
+  useCustomizationStore,
+  useHasWallpaper,
+  useIsDarkTheme,
+  getBlockStyle,
+} from "@/features/settings/store/customizationStore";
 
 export interface SidebarProps {
   searchOpen: boolean;
@@ -9,8 +15,13 @@ export interface SidebarProps {
 }
 
 function Sidebar({ searchOpen, onSearchToggle }: SidebarProps) {
+  const sidebarConfig = useCustomizationStore((s) => s.sidebar);
+  const isDark = useIsDarkTheme();
+  const hasWallpaper = useHasWallpaper();
+
   return (
     <div
+      style={getBlockStyle(sidebarConfig, isDark, hasWallpaper)}
       className={cn(
         "h-full w-[58px] rounded-xl flex flex-col overflow-hidden border-none bg-bg-glass backdrop-blur-[20px]",
       )}

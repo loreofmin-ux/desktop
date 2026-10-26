@@ -39,7 +39,12 @@ import { SpeedPitchPicker } from "./SpeedPitchPicker";
 import { TimelineSlider } from "./TimelineSlider";
 import { useTheme } from "next-themes";
 import { useCoverReady, CoverImage } from "@/features/covers";
-import { useHasPageBackdrop } from "@/features/settings/store/customizationStore";
+import {
+  useHasPageBackdrop,
+  useHasWallpaper,
+  useCustomizationStore,
+  getBlockStyle,
+} from "@/features/settings/store/customizationStore";
 import { ArtistLink } from "@/features/artist";
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
@@ -218,6 +223,8 @@ function MiniPlayer({
   const usesRoundedStyle = !embedded && miniPlayerStyle === "rounded";
   const usesBackgroundProgress = true;
   const hasPageBackdrop = useHasPageBackdrop();
+  const hasWallpaper = useHasWallpaper();
+  const miniplayerConfig = useCustomizationStore((s) => s.miniplayer);
   const [accentColor, setAccentColor] = useState(
     isLight ? "rgba(0, 0, 0, 0.06)" : "rgba(255, 255, 255, 0.12)",
   );
@@ -628,6 +635,7 @@ function MiniPlayer({
       </AnimatePresence>
 
       <div
+        style={getBlockStyle(miniplayerConfig, true, hasWallpaper)}
         className={`relative h-[64px] w-full overflow-hidden cursor-pointer ${
           usesRoundedStyle
             ? "rounded-full border-[0.5px] border-border-tertiary bg-bg-primary"
