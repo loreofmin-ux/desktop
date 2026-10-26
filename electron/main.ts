@@ -57,7 +57,7 @@ import { detectCompositor } from "./compositor/index.js";
 import { BundleManager } from "./bundle-manager.js";
 import { createBundleErrorStamp } from "./bundle-stamp.js";
 import { createSleepBlocker } from "./sleep-blocker.js";
-import { withOpenCors } from "./cors.js";
+import { needsOpenCors, withOpenCors } from "./cors.js";
 import { createShutdown } from "./shutdown.js";
 import {
   computeDragBounds,
@@ -779,8 +779,14 @@ if (!gotTheLock) {
       },
     );
 
+    // other hosts keep their own cors headers. dev builds also talk to a
+    // local api (see .env.example)
     session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-      callback(withOpenCors(details.responseHeaders, details.method));
+      callback(
+        needsOpenCors(details.url, !app.isPackaged)
+          ? withOpenCors(details.responseHeaders, details.method)
+          : {},
+      );
     });
 
     let lastSavedExportPath: string | null = null;
