@@ -28,10 +28,15 @@ import Sidebar from "./Sidebar";
 import { cn } from "@/shared/lib";
 import WindowControls from "./WindowControls";
 import RightDrawer from "./RightDrawer";
+import {
+  FullscreenQueueButton,
+  FullscreenQueueDrawer,
+} from "./FullscreenQueue";
 import { FullscreenRouteContext } from "../fullscreenRouteContext";
 import DynamicBlurBackground from "./DynamicBlurBackground";
 import AmbientTopGlow from "./AmbientTopGlow";
 import { useGlobalShortcuts } from "../hooks/useGlobalShortcuts";
+import { useFullscreenQueue } from "../hooks/useFullscreenQueue";
 import { useDisableButtonFocus } from "../hooks/useDisableButtonFocus";
 import { useWindowState } from "../hooks/useWindowState";
 import {
@@ -246,6 +251,7 @@ export default function AppFrame({ children }: AppFrameProps) {
   }
   const isRightDrawerOpen =
     queuePopupOpen && !searchOpen && !isFullscreenPlayer;
+  const fullscreenQueue = useFullscreenQueue(isFullscreenPlayer);
 
   const openFullscreenPlayer = useCallback(() => {
     setFullscreenPlayerOpen(true);
@@ -302,9 +308,11 @@ export default function AppFrame({ children }: AppFrameProps) {
     searchOpen,
     openSearch,
     closeSearch,
-    rightPanelOpen: queuePopupOpen,
-    openRightPanel,
-    closeRightPanel,
+    rightPanelOpen: isFullscreenPlayer ? fullscreenQueue.open : queuePopupOpen,
+    openRightPanel: isFullscreenPlayer ? fullscreenQueue.show : openRightPanel,
+    closeRightPanel: isFullscreenPlayer
+      ? fullscreenQueue.close
+      : closeRightPanel,
     fullscreenOpen: isFullscreenPlayer,
     openFullscreen: openFullscreenPlayer,
     closeFullscreen: handleCloseFullscreen,
@@ -865,6 +873,13 @@ export default function AppFrame({ children }: AppFrameProps) {
         ) : null}
       </AnimatePresence>
 
+      <FullscreenQueueDrawer
+        open={fullscreenQueue.open}
+        width={RIGHT_DRAWER_WIDTH}
+        onClose={fullscreenQueue.close}
+        onNavigate={closeFullscreenPlayer}
+      />
+
       <AnimatePresence>
         {searchOpen && (
           <motion.div
@@ -1102,8 +1117,12 @@ export default function AppFrame({ children }: AppFrameProps) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute top-[6px] right-[6px] z-[80] pointer-events-auto select-none"
+            className="absolute top-[6px] right-[6px] z-[80] flex items-center gap-[6px] pointer-events-auto select-none"
           >
+            <FullscreenQueueButton
+              open={fullscreenQueue.open}
+              onToggle={fullscreenQueue.toggle}
+            />
             <WindowControls isFullscreen embedded />
           </motion.div>
         )}

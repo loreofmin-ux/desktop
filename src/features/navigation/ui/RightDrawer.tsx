@@ -50,6 +50,7 @@ const QueueList = memo(function QueueList({
   playbackContext,
   playbackContextCover,
   scrollContainerRef,
+  onNavigate,
 }: {
   queue: any[];
   queueLimit: number;
@@ -57,6 +58,7 @@ const QueueList = memo(function QueueList({
   playbackContext: any;
   playbackContextCover: any;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
+  onNavigate?: () => void;
 }) {
   const effectiveLimit = Math.max(
     queueLimit,
@@ -268,6 +270,7 @@ const QueueList = memo(function QueueList({
                   : "bg-transparent hover:bg-black/[0.035] dark:hover:bg-white/[0.04]"
               }`}
               imageShape="square"
+              onNavigate={onNavigate}
               onPlay={() => {
                 if (typeof window !== "undefined" && window.__linerWasDragging)
                   return;
@@ -317,9 +320,10 @@ const QueueList = memo(function QueueList({
 
 export interface RightDrawerProps {
   onClose?: () => void;
+  onNavigate?: () => void;
 }
 
-function RightDrawer({ onClose }: RightDrawerProps) {
+function RightDrawer({ onClose, onNavigate }: RightDrawerProps) {
   const player = usePlayerState();
   const { t } = useTranslation();
   const queueScrollRef = useRef<HTMLDivElement>(null);
@@ -434,6 +438,7 @@ function RightDrawer({ onClose }: RightDrawerProps) {
               playbackContext={player.playbackContext}
               playbackContextCover={player.playbackContextCover}
               scrollContainerRef={queueScrollRef}
+              onNavigate={onNavigate}
             />
           ) : (
             <div className="h-full flex items-center justify-center text-text-tertiary text-[14px]">
