@@ -31,6 +31,7 @@ import "@braccato/core/styles/instrumental.css";
 import KawarpWrapper from "./KawarpWrapper";
 import AmbientLayer from "./AmbientLayer";
 import { BetaVisualsWarning } from "./BetaVisualsWarning";
+import { UpNextBanner } from "./UpNextBanner";
 import { useTranslation } from "@/languages";
 
 const BRACCATO_TAG = "braccato-lyrics";
@@ -606,6 +607,8 @@ export function FullscreenPlayer({
       >
         <DownLine size={18} />
       </button>
+
+      <UpNextBanner className="pointer-events-none absolute right-[24px] bottom-[24px] z-30" />
     </div>
   );
 }
