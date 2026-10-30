@@ -61,8 +61,7 @@ function load(): YoutubeAuthTokens | null {
   } catch (err) {
     console.error("[YouTube] reading the stored session failed:", err);
   }
-  // older builds kept the tokens in plain localStorage: move them to main once.
-  // the plain copy is only dropped once main has them on disk; otherwise the next launch retries
+  // older builds kept the tokens in plain localStorage: move them to main once
   const legacy = readLocal();
   if (legacy) {
     if (stored || !legacy.refreshToken) {
@@ -93,14 +92,16 @@ function persistInMain(
   );
 }
 
-/** resolves whether the change was stored for the next launch */
 function save(next: YoutubeAuthTokens | null): Promise<boolean> {
   session = next;
   const bridge = mainBridge();
   let saved: Promise<boolean>;
   if (bridge) {
-    dropLocal();
-    saved = persistInMain(bridge, next);
+    if (!next) dropLocal();
+    saved = persistInMain(bridge, next).then((ok) => {
+      if (ok) dropLocal();
+      return ok;
+    });
   } else {
     try {
       if (next)
@@ -175,7 +176,6 @@ export async function completeYoutubeTvSignIn(
     signal,
   );
   storePageId(null);
-  // a sign-in that can't be stored would silently sign out on the next launch: say so now
   if (!(await save(tokens))) {
     session = null;
     notifyChanged();

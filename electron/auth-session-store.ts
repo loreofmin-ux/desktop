@@ -111,7 +111,6 @@ export class AuthSessionStore {
     return session;
   }
 
-  /** like set(), but says whether the change reached the disk (false for a malformed session) */
   persist(next: unknown): boolean {
     const session = isStoredAuthSession(next) ? next : null;
     if (next !== null && !session) return false;

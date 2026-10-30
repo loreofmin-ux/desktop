@@ -23,7 +23,6 @@ function installBridge(stored: YoutubeAuthTokens | null, writable = true) {
   const bridge = {
     stored,
     get: vi.fn(() => bridge.stored),
-    // main answers whether the tokens reached the disk
     set: vi.fn(async (next: YoutubeAuthTokens | null) => {
       if (!writable) return false;
       bridge.stored = next;

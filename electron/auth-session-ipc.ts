@@ -116,7 +116,6 @@ export function registerAuthSessionIpc(): AuthSessionStore {
     event.returnValue = fromApp(event) ? youtubeStore.get() : null;
   });
 
-  // answers whether the tokens reached the disk, so the renderer never drops its only copy too early
   ipcMain.handle("youtube-auth:set-session", (event, next: unknown) => {
     if (!fromApp(event)) return false;
     return youtubeStore.persist(next);

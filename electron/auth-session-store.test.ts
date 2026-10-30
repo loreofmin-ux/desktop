@@ -91,7 +91,7 @@ describe("AuthSessionStore", () => {
     expect(createStore().persist(session("rt_1"))).toBe(true);
     expect(createStore().persist({ accessToken: "a" })).toBe(false);
     fs.rmSync(file, { force: true });
-    fs.mkdirSync(file, { recursive: true }); // a directory where the file should go: the write fails
+    fs.mkdirSync(file, { recursive: true });
     expect(createStore().persist(session("rt_2"))).toBe(false);
   });
 
