@@ -997,8 +997,11 @@ export class OverlayManager {
     }
 
     try {
+      // on macOS, visibleOnFullScreen alone turns the whole app into a
+      // UIElement, which removes Liner from the Dock right after launch (#320)
       this.overlayWindow.setVisibleOnAllWorkspaces(true, {
         visibleOnFullScreen: true,
+        skipTransformProcessType: true,
       });
     } catch {}
 

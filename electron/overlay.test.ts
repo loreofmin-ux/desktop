@@ -293,6 +293,29 @@ describe("OverlayManager", () => {
     expect(overlay.isVisible()).toBe(false);
   });
 
+  it("pins the overlay on every space without hiding the app from the macOS dock", async () => {
+    const pin = vi.spyOn(
+      electron.FakeWindow.prototype,
+      "setVisibleOnAllWorkspaces",
+    );
+    const { overlays, ready } = setup();
+    await vi.advanceTimersByTimeAsync(600);
+    electron.ipcOn.get("overlay:update-settings")?.(
+      {},
+      { alwaysOnTop: true, position: "top-right" },
+    );
+    ready(overlays()[0]);
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(pin).toHaveBeenCalled();
+    const calls = pin.mock.calls as unknown as [boolean, object][];
+    for (const [, options] of calls) {
+      expect(options).toMatchObject({
+        visibleOnFullScreen: true,
+        skipTransformProcessType: true,
+      });
+    }
+  });
+
   it("revealing always really shows the window, even if windows already reports it visible", async () => {
     const { manager, overlays, ready } = setup();
     await vi.advanceTimersByTimeAsync(600);
