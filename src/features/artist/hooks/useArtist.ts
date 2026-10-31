@@ -7,6 +7,8 @@ import {
   toClientTrack,
 } from "@/shared/api";
 import type { Track } from "@/shared/types";
+import type { ApiArtistDetails } from "@/shared/api";
+import { isSoundCloudCatalogId } from "@/shared/media/soundcloud";
 
 export interface ArtistAlbumViewModel {
   id: string;
@@ -22,6 +24,8 @@ export interface ArtistReleaseViewModel extends ArtistAlbumViewModel {
 }
 
 export interface ArtistPageData {
+  // the artist's real id, also when the page was opened with a name
+  id?: string;
   title: string;
   description: string;
   coverUrl: string;
@@ -40,10 +44,41 @@ export interface ArtistPageData {
   singles: ArtistReleaseViewModel[];
 }
 
+const CHANNEL_ID = /^UC[A-Za-z0-9_-]{22}$/;
+
+const comparableName = (name: string) =>
+  name.normalize("NFKD").replace(/\p{M}/gu, "").trim().toLocaleLowerCase();
+
+// share links carry the artist's name when the track had no channel id
+// (liner://artist?id=LATIN%20MAFIA): look it up by an exact name match
+export async function findArtistIdByName(name: string): Promise<string | null> {
+  const wanted = comparableName(name);
+  if (!wanted) return null;
+  const { items } = await api.search(name, "artist");
+  const match = items.find(
+    (item) => item.type === "artist" && comparableName(item.name) === wanted,
+  );
+  return match?.id ?? null;
+}
+
+async function fetchArtist(artistId: string): Promise<ApiArtistDetails> {
+  try {
+    return await api.getArtist(artistId);
+  } catch (error) {
+    if (CHANNEL_ID.test(artistId) || isSoundCloudCatalogId(artistId)) {
+      throw error;
+    }
+    const resolved = await findArtistIdByName(artistId).catch(() => null);
+    if (!resolved || resolved === artistId) throw error;
+    return api.getArtist(resolved);
+  }
+}
+
 async function loadArtistPage(artistId: string): Promise<ArtistPageData> {
-  const artist = await api.getArtist(artistId);
+  const artist = await fetchArtist(artistId);
   const tracks = artist.tracks.map(toClientTrack);
   const formatted: ArtistPageData = {
+    id: artist.id || artistId,
     title: artist.name,
     monthlyListeners: artist.monthlyListeners,
     verified: Boolean(artist.verified),

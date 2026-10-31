@@ -98,7 +98,8 @@ function ArtistContent() {
   const shownIdRef = useRef(id);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const decodedId = id ? decodeURIComponent(id) : "";
+  // a link by name resolves to the real id once the artist is loaded
+  const decodedId = data?.id || (id ? decodeURIComponent(id) : "");
   const { data: savedArtists } = useExternalItems("artist");
   const inLibrary = savedArtists.some((artist) => artist.id === decodedId);
 
@@ -181,8 +182,8 @@ function ArtistContent() {
   const { toast } = useToast();
 
   const handleSaveToLibrary = () => {
-    if (!data || !id) return;
-    const decoded = decodeURIComponent(id);
+    if (!data || !decodedId) return;
+    const decoded = decodedId;
     if (inLibrary) {
       useModalStore.getState().openRemoveFromLibrary({
         id: decoded,

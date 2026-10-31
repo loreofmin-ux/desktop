@@ -9,7 +9,7 @@ import { queryCache } from "@/shared/cache/queryCache";
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 vi.mock("@/shared/api", () => ({
-  api: { getArtist: vi.fn() },
+  api: { getArtist: vi.fn(), search: vi.fn() },
   mediaUrl: (url: string) => url,
   toMaxQualityAvatarUrl: (url: string) => url,
   toClientTrack: (track: { id: string }) => ({ ...track }),
@@ -74,6 +74,51 @@ describe("useArtist", () => {
       loading: false,
       data: { title: "Boards of Canada" },
     });
+    expect(api.getArtist).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens a share link that carries the artist's name instead of an id", async () => {
+    const channel = "UC0123456789abcdefghijKL";
+    vi.mocked(api.getArtist).mockImplementation(async (id: string) => {
+      if (id !== channel) throw new Error("not found");
+      return { ...artist, id: channel, name: "Latin Mafia" } as any;
+    });
+    vi.mocked(api.search).mockResolvedValue({
+      items: [
+        {
+          type: "artist",
+          id: "UCzzzzzzzzzzzzzzzzzzzzzz",
+          name: "Latin Mafia Tribute",
+        },
+        { type: "artist", id: channel, name: "Latin Mafia" },
+      ],
+    } as any);
+
+    await act(async () => {
+      root.render(<Probe id="LATIN MAFIA" />);
+    });
+
+    expect(api.search).toHaveBeenCalledWith("LATIN MAFIA", "artist");
+    expect(latest?.data).toMatchObject({ id: channel, title: "Latin Mafia" });
+  });
+
+  it("does not guess an artist when no name matches exactly", async () => {
+    vi.mocked(api.getArtist).mockRejectedValue(new Error("not found"));
+    vi.mocked(api.search).mockResolvedValue({
+      items: [
+        {
+          type: "artist",
+          id: "UCzzzzzzzzzzzzzzzzzzzzzz",
+          name: "Someone Else",
+        },
+      ],
+    } as any);
+
+    await act(async () => {
+      root.render(<Probe id="Nobody" />);
+    });
+
+    expect(latest).toMatchObject({ data: null, loading: false });
     expect(api.getArtist).toHaveBeenCalledTimes(1);
   });
 });
