@@ -680,8 +680,6 @@ class PlayerEngine {
 
   public resume(): void {
     const store = usePlayerStore.getState();
-    // the queue ended (or playback was stopped): the audio element still holds the
-    // last source, and playing it would restart that track with the player bar hidden
     if (!store.currentTrack) return;
     if (playerRuntime) {
       if (
