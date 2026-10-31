@@ -18,6 +18,12 @@ export function zoomActionFor(input: ZoomKey): ZoomAction | null {
     return "in";
   if (input.key === "-" || input.code === "NumpadSubtract") return "out";
   if (input.key === "0" || input.code === "Numpad0") return "reset";
+  // layouts where these keys type something else (AZERTY: the 0 key gives
+  // "à"): fall back to the physical key, like the browser shortcuts do.
+  // Otherwise Electron's own menu resets the zoom behind our back.
+  if (input.code === "Digit0") return "reset";
+  if (input.code === "Equal") return "in";
+  if (input.code === "Minus") return "out";
   return null;
 }
 

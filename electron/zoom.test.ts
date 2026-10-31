@@ -36,6 +36,14 @@ describe("zoom shortcuts", () => {
     expect(zoomActionFor(key("=", { type: "keyUp" }))).toBeNull();
   });
 
+  it("follows the physical keys on layouts like AZERTY where Ctrl+0 types à", () => {
+    expect(zoomActionFor(key("à", { code: "Digit0" }))).toBe("reset");
+    expect(zoomActionFor(key("à", { code: "Digit0", alt: true }))).toBeNull();
+    expect(zoomActionFor(key("", { code: "Equal" }))).toBe("in");
+    expect(zoomActionFor(key(")", { code: "Minus" }))).toBe("out");
+    expect(zoomActionFor(key("a", { code: "KeyQ" }))).toBeNull();
+  });
+
   it("stays between the minimum and what the window can fit", () => {
     expect(nextZoomFactor(MIN_ZOOM, "out", MAX_ZOOM)).toBe(MIN_ZOOM);
     expect(nextZoomFactor(1, "in", 1.2)).toBe(1.1);
