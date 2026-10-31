@@ -77,6 +77,25 @@ async function renderIconDataUrl(
   return canvas.toDataURL("image/png");
 }
 
+// Binaries up to 0.2.10 package the previous logo, and an OTA update only
+// replaces the renderer. On those, the rendered icon has to be installed or
+// Linux falls back to the old packaged one in the dock and launcher.
+const LAST_VERSION_WITH_OLD_ICON = [0, 2, 10];
+
+export function packagedIconIsOutdated(
+  appVersion: string | undefined,
+): boolean {
+  const match = /^(\d+)\.(\d+)\.(\d+)/.exec(appVersion ?? "");
+  if (!match) return false;
+  const version = match.slice(1).map(Number);
+  for (let i = 0; i < LAST_VERSION_WITH_OLD_ICON.length; i++) {
+    if (version[i] !== LAST_VERSION_WITH_OLD_ICON[i]) {
+      return version[i] < LAST_VERSION_WITH_OLD_ICON[i];
+    }
+  }
+  return true;
+}
+
 export function useAppIconSync() {
   const { theme, resolvedTheme } = useTheme();
 
@@ -87,24 +106,30 @@ export function useAppIconSync() {
     const layout =
       window.linerElectron?.platform === "darwin" ? MAC_DOCK : FULL_BLEED;
 
-    void renderIconDataUrl(isLight, layout).then((dataUrl) => {
-      if (!active || !dataUrl) return;
+    const appVersion = Promise.resolve(
+      window.linerElectron?.getAppVersion?.(),
+    ).catch(() => undefined);
 
-      if (window.linerElectron?.setAppIcon) {
-        window.linerElectron.setAppIcon(dataUrl, {
-          isDefault: true,
-        });
-      }
+    void Promise.all([renderIconDataUrl(isLight, layout), appVersion]).then(
+      ([dataUrl, version]) => {
+        if (!active || !dataUrl) return;
 
-      let favicon =
-        document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-      if (!favicon) {
-        favicon = document.createElement("link");
-        favicon.rel = "icon";
-        document.head.appendChild(favicon);
-      }
-      favicon.href = dataUrl;
-    });
+        if (window.linerElectron?.setAppIcon) {
+          window.linerElectron.setAppIcon(dataUrl, {
+            isDefault: !packagedIconIsOutdated(version),
+          });
+        }
+
+        let favicon =
+          document.querySelector<HTMLLinkElement>("link[rel~='icon']");
+        if (!favicon) {
+          favicon = document.createElement("link");
+          favicon.rel = "icon";
+          document.head.appendChild(favicon);
+        }
+        favicon.href = dataUrl;
+      },
+    );
 
     return () => {
       active = false;
