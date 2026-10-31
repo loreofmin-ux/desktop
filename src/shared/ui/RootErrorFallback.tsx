@@ -23,6 +23,15 @@ export interface RootErrorFallbackProps {
   onGoHome?: () => void;
 }
 
+// The app is served from file:// behind a HashRouter, so "/" would point at the
+// root of the disk. Home is the "#/" route of the current document.
+export function goToAppHome(
+  location: Pick<Location, "hash" | "reload"> = window.location,
+): void {
+  location.hash = "#/";
+  location.reload();
+}
+
 export function RootErrorFallback({
   error,
   errorInfo,
@@ -56,7 +65,7 @@ export function RootErrorFallback({
     if (onGoHome) {
       onGoHome();
     } else if (typeof window !== "undefined") {
-      window.location.href = "/";
+      goToAppHome();
     }
   }, [onGoHome]);
 
