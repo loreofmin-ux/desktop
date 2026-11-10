@@ -45,6 +45,7 @@ const DEAD_REFRESH_CODES = new Set([
 const REFRESH_PATH = "/v1/auth/refresh";
 const REFRESH_TIMEOUT_MS = 15_000;
 const REFRESH_ATTEMPTS = 2;
+const REFRESH_RECOVERY_OFFSETS_MS = [1_000, 5_000, 15_000, 40_000, 90_000];
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 export function isTrustedApiBase(url: string): boolean {
@@ -85,10 +86,17 @@ function describeError(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+type RefreshRecovery = {
+  refreshToken: string;
+  startedAt: number;
+  timer: ReturnType<typeof setTimeout> | null;
+};
+
 export class AuthSessionStore {
   private session: StoredAuthSession | null = null;
   private loaded = false;
   private inFlight: Promise<AuthRefreshResult> | null = null;
+  private recovery: RefreshRecovery | null = null;
   private readonly listeners = new Set<AuthSessionListener>();
 
   constructor(
@@ -139,15 +147,64 @@ export class AuthSessionStore {
       });
     }
     if (!this.inFlight) {
-      this.inFlight = this.runRefresh(
-        apiBaseUrl.replace(/\/+$/, ""),
-        current,
-        origin,
-      ).finally(() => {
-        this.inFlight = null;
-      });
+      const base = apiBaseUrl.replace(/\/+$/, "");
+      this.inFlight = this.runRefresh(base, current, origin)
+        .then((result) => {
+          this.planRecovery(base, current.refreshToken, result);
+          return result;
+        })
+        .finally(() => {
+          this.inFlight = null;
+        });
     }
     return this.inFlight;
+  }
+
+  private planRecovery(
+    apiBaseUrl: string,
+    refreshToken: string,
+    result: AuthRefreshResult,
+  ): void {
+    if (
+      result.outcome !== "transient" ||
+      this.get()?.refreshToken !== refreshToken
+    ) {
+      this.stopRecovery();
+      return;
+    }
+    const now = Date.now();
+    if (this.recovery?.refreshToken !== refreshToken) {
+      this.stopRecovery();
+      this.recovery = { refreshToken, startedAt: now, timer: null };
+    }
+    const recovery = this.recovery;
+    if (!recovery) return;
+    const elapsed = now - recovery.startedAt;
+    const nextOffset = REFRESH_RECOVERY_OFFSETS_MS.find(
+      (offset) => offset > elapsed,
+    );
+    if (nextOffset === undefined) {
+      this.stopRecovery();
+      return;
+    }
+    if (recovery.timer) clearTimeout(recovery.timer);
+    recovery.timer = setTimeout(() => {
+      recovery.timer = null;
+      if (this.recovery !== recovery) return;
+      if (this.get()?.refreshToken !== refreshToken) {
+        this.stopRecovery();
+        return;
+      }
+      this.refresh(apiBaseUrl).catch((err: unknown) => {
+        console.error("[auth] refresh retry failed:", describeError(err));
+      });
+    }, nextOffset - elapsed);
+    recovery.timer.unref?.();
+  }
+
+  private stopRecovery(): void {
+    if (this.recovery?.timer) clearTimeout(this.recovery.timer);
+    this.recovery = null;
   }
 
   private async runRefresh(
@@ -233,6 +290,7 @@ export class AuthSessionStore {
   }
 
   private commit(next: StoredAuthSession | null, origin?: number): void {
+    if (next?.refreshToken !== this.recovery?.refreshToken) this.stopRecovery();
     this.session = next;
     this.loaded = true;
     this.write(next);

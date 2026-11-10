@@ -55,12 +55,45 @@ describe("AuthSessionStore", () => {
     file = path.join(dir, "auth", "session.json");
     fetchMock = vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
     syncClock = vi.fn<(dateHeader: string) => void>();
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     fs.rmSync(dir, { recursive: true, force: true });
     vi.restoreAllMocks();
   });
+
+  const rotatingServer = (graceMs = 120_000) => {
+    const rotatedAt = new Map<string, number>();
+    const seen: string[] = [];
+    let issued = 1;
+    let lose = 0;
+    fetchMock.mockImplementation(async (_url, init) => {
+      const { refreshToken } = JSON.parse(String(init.body)) as {
+        refreshToken: string;
+      };
+      seen.push(refreshToken);
+      const at = rotatedAt.get(refreshToken);
+      if (at !== undefined && Date.now() - at > graceMs) {
+        return json(401, { code: "INVALID_REFRESH_TOKEN" });
+      }
+      if (at === undefined) rotatedAt.set(refreshToken, Date.now());
+      issued += 1;
+      const next = `rt_${issued}`;
+      if (lose > 0) {
+        lose -= 1;
+        throw new DOMException("The operation timed out.", "TimeoutError");
+      }
+      return json(200, { accessToken: `access_${next}`, refreshToken: next });
+    });
+    return {
+      seen,
+      loseNext: (count = 1) => {
+        lose = count;
+      },
+    };
+  };
 
   it("persists the session encrypted and reads it back in a new process", () => {
     createStore().set(session("rt_1"));
@@ -230,5 +263,101 @@ describe("AuthSessionStore", () => {
     );
     expect(fetchMock).not.toHaveBeenCalled();
     expect(isTrustedApiBase("http://localhost:1337")).toBe(true);
+  });
+
+  it("retries a refresh whose response was lost while the server still accepts the old token", async () => {
+    const server = rotatingServer();
+    const store = createStore();
+    const listener = vi.fn();
+    store.set(session("rt_1"));
+    store.onChange(listener);
+    server.loseNext();
+    const lost = await store.refresh(API, "rt_1", 4);
+    expect(lost.outcome).toBe("transient");
+    expect(store.get()?.refreshToken).toBe("rt_1");
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(server.seen).toEqual(["rt_1", "rt_1"]);
+    expect(store.get()?.refreshToken).toBe("rt_3");
+    expect(listener).toHaveBeenLastCalledWith(
+      expect.objectContaining({ refreshToken: "rt_3" }),
+      undefined,
+    );
+    await vi.advanceTimersByTimeAsync(200_000);
+    expect(server.seen).toHaveLength(2);
+  });
+
+  it("stays signed in after a lost refresh response and a later refresh", async () => {
+    const server = rotatingServer();
+    const store = createStore();
+    store.set(session("rt_1"));
+    server.loseNext();
+    await store.refresh(API, "rt_1");
+    await vi.advanceTimersByTimeAsync(20 * 60_000);
+
+    const later = await store.refresh(API, store.get()?.refreshToken);
+
+    expect(later.outcome).toBe("refreshed");
+    expect(store.get()).not.toBeNull();
+  });
+
+  it("keeps retrying a lost refresh until one gets through inside the grace window", async () => {
+    const server = rotatingServer();
+    const store = createStore();
+    store.set(session("rt_1"));
+    server.loseNext(3);
+    await store.refresh(API, "rt_1");
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    expect(server.seen).toEqual(["rt_1", "rt_1", "rt_1", "rt_1"]);
+    expect(store.get()?.refreshToken).toBe("rt_5");
+  });
+
+  it("gives up retrying before the server's reuse grace ends and keeps the session", async () => {
+    const store = createStore();
+    store.set(session("rt_1"));
+    fetchMock.mockRejectedValue(new Error("offline"));
+    await store.refresh(API, "rt_1");
+
+    await vi.advanceTimersByTimeAsync(110_000);
+    const calls = fetchMock.mock.calls.length;
+    await vi.advanceTimersByTimeAsync(10 * 60_000);
+
+    expect(calls).toBe(6);
+    expect(fetchMock).toHaveBeenCalledTimes(calls);
+    expect(store.get()?.refreshToken).toBe("rt_1");
+  });
+
+  it("stops retrying once the user signs out or signs in again", async () => {
+    const store = createStore();
+    store.set(session("rt_1"));
+    fetchMock.mockRejectedValue(new Error("offline"));
+    await store.refresh(API, "rt_1");
+    store.set(null);
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    store.set(session("rt_a"));
+    await store.refresh(API, "rt_a");
+    store.set(session("rt_b"));
+    await vi.advanceTimersByTimeAsync(120_000);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(store.get()?.refreshToken).toBe("rt_b");
+  });
+
+  it("signs out when a retry is told the refresh token is dead", async () => {
+    const store = createStore();
+    store.set(session("rt_1"));
+    fetchMock
+      .mockRejectedValueOnce(new Error("socket hang up"))
+      .mockResolvedValue(json(401, { code: "INVALID_REFRESH_TOKEN" }));
+    await store.refresh(API, "rt_1");
+
+    await vi.advanceTimersByTimeAsync(120_000);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(store.get()).toBeNull();
   });
 });
