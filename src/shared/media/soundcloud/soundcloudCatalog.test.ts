@@ -158,6 +158,31 @@ describe("soundcloudCatalog sets", () => {
     expect(spy).toHaveBeenCalledTimes(2);
   });
 
+  it("shows GO+ tracks with their full length", async () => {
+    installFetch({
+      "/playlists/7": () => ({
+        id: 7,
+        title: "Mix",
+        user: USER,
+        tracks: [
+          track(1, {
+            policy: "SNIP",
+            duration: 30_000,
+            full_duration: 185_000,
+          }),
+          track(2),
+        ],
+      }),
+    });
+
+    const playlist = await soundcloudCatalog.getPlaylist("sc_playlist_7");
+
+    expect(playlist.tracks.map((item) => item.durationMs)).toEqual([
+      185_000, 2000,
+    ]);
+    expect(playlist.durationMs).toBe(187_000);
+  });
+
   it("maps the same set as an album with its uploader as artist", async () => {
     installFetch({
       "/playlists/7": () => ({

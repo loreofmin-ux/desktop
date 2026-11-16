@@ -36,6 +36,14 @@ export function soundCloudCover(rawUrl: unknown): Cover | undefined {
   };
 }
 
+export function soundCloudDurationMs(track: JsonRecord): number | undefined {
+  const duration = numberValue(track.duration);
+  const fullDuration = numberValue(track.full_duration);
+  return fullDuration && fullDuration > (duration ?? 0)
+    ? fullDuration
+    : duration;
+}
+
 export function mapSoundCloudArtist(
   rawUser: unknown,
 ): SoundCloudArtistRef | undefined {
@@ -61,7 +69,7 @@ export function mapSoundCloudCatalogTrack(rawTrack: unknown): ApiTrack | null {
     id: soundCloudTrackId(id),
     title,
     artists: artist ? [artist] : [],
-    durationMs: numberValue(track.duration) ?? 0,
+    durationMs: soundCloudDurationMs(track) ?? 0,
     ...(cover ? { cover } : {}),
     ...(publisher?.explicit === true ? { explicit: true } : {}),
   };
