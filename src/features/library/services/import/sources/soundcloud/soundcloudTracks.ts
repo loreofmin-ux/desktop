@@ -1,10 +1,8 @@
+import { asRecord, type JsonRecord, stringValue } from "@/shared/utils/json";
 import {
-  asRecord,
-  type JsonRecord,
-  numberValue,
-  stringValue,
-} from "@/shared/utils/json";
-import { soundCloudCover } from "@/shared/media/soundcloud";
+  soundCloudCover,
+  soundCloudDurationMs,
+} from "@/shared/media/soundcloud";
 import type { ClientImportedTrack } from "../../importTypes";
 import { withoutArtistPrefix } from "../../shared/titles";
 
@@ -50,7 +48,7 @@ export function mapSoundCloudTrack(
     artists: [artist],
     artistIds: [artistId],
     album: stringValue(publisher?.release_title),
-    durationMs: numberValue(item.duration),
+    durationMs: soundCloudDurationMs(item),
     ...(artwork ? { coverUrl: artwork } : {}),
   };
 }

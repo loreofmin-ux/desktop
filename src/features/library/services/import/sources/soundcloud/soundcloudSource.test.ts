@@ -114,6 +114,48 @@ describe("importSoundCloud", () => {
     expect(fetchMock).toHaveBeenCalledTimes(34);
   });
 
+  it("keeps the full length of GO+ tracks instead of the 30 second preview", async () => {
+    rememberSoundCloudClientId(FRESH_ID);
+    vi.mocked(fetch).mockImplementation(async (input) => {
+      const url = new URL(input.toString());
+      const body =
+        url.pathname === "/users/7/likes"
+          ? {
+              collection: [
+                {
+                  track: {
+                    id: 1,
+                    title: "Go Plus",
+                    user: { username: "u" },
+                    policy: "SNIP",
+                    duration: 30_000,
+                    full_duration: 185_000,
+                  },
+                },
+                {
+                  track: {
+                    id: 2,
+                    title: "Free",
+                    user: { username: "u" },
+                    duration: 230_000,
+                    full_duration: 230_000,
+                  },
+                },
+              ],
+            }
+          : respond(url);
+      return new Response(JSON.stringify(body));
+    });
+
+    const playlist = await importSoundCloud(
+      "https://soundcloud.com/listener/likes",
+    );
+
+    expect(playlist.tracks.map((track) => track.durationMs)).toEqual([
+      185_000, 230_000,
+    ]);
+  });
+
   it("resolves likes through the shared api client and refreshes a rejected client id", async () => {
     rememberSoundCloudClientId(STALE_ID);
     const playlist = await importSoundCloud(
